@@ -5,7 +5,7 @@ import { productAPI, categoryAPI } from '../../api/services';
 import { toast } from 'react-toastify';
 import Spinner from '../../components/common/Spinner';
 
-const EMPTY_FORM = { name: '', description: '', price: '', stock: '', category_id: '', image_url: '', is_active: 1 };
+const EMPTY_FORM = { name: '', description: '', price: '', stock: '', category_id: '', image_url: '', supplier_name: '', supplier_email: '', is_active: 1 };
 
 export default function AdminProducts() {
   const [products,   setProducts]   = useState([]);
@@ -26,7 +26,7 @@ export default function AdminProducts() {
 
   const openAdd  = () => { setForm(EMPTY_FORM); setEditId(null); setShowForm(true); };
   const openEdit = (p) => {
-    setForm({ name: p.name, description: p.description || '', price: p.price, stock: p.stock, category_id: p.category_id, image_url: p.image_url || '', is_active: p.is_active });
+    setForm({ name: p.name, description: p.description || '', price: p.price, stock: p.stock, category_id: p.category_id, image_url: p.image_url || '', supplier_name: p.supplier_name || '', supplier_email: p.supplier_email || '', is_active: p.is_active });
     setEditId(p.id); setShowForm(true);
   };
 
@@ -101,6 +101,14 @@ export default function AdminProducts() {
               <div className="form-group" style={{ gridColumn: '1 / -1' }}>
                 <label>Image URL</label>
                 <input className="form-control" name="image_url" value={form.image_url} onChange={handleChange} placeholder="https://…" />
+              </div>
+              <div className="form-group">
+                <label>Supplier Name</label>
+                <input className="form-control" name="supplier_name" value={form.supplier_name} onChange={handleChange} placeholder="Supplier / Brand" />
+              </div>
+              <div className="form-group">
+                <label>Supplier Email</label>
+                <input className="form-control" name="supplier_email" type="email" value={form.supplier_email} onChange={handleChange} placeholder="supplier@example.com" />
               </div>
               <div className="form-group" style={{ gridColumn: '1 / -1' }}>
                 <label>Description</label>

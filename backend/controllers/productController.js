@@ -13,7 +13,7 @@ exports.getProducts = async (req, res, next) => {
     let query = supabase
       .from('products')
       .select(`
-        id, name, slug, price, stock, image_url, is_active, description,
+        id, name, slug, price, stock, image_url, is_active, description, supplier_name, supplier_email,
         categories!inner ( id, name, slug )
       `, { count: 'exact' })
       .order('created_at', { ascending: false })
@@ -104,12 +104,12 @@ exports.getProduct = async (req, res, next) => {
 // ── POST /api/products  (admin) ────────────────────────────────
 exports.createProduct = async (req, res, next) => {
   try {
-    const { name, description, price, stock, category_id, image_url } = req.body;
+    const { name, description, price, stock, category_id, image_url, supplier_name, supplier_email } = req.body;
     const slug = slugify(name, { lower: true, strict: true });
 
     const { data, error } = await supabase
       .from('products')
-      .insert({ name, slug, description, price, stock, category_id, image_url })
+      .insert({ name, slug, description, price, stock, category_id, image_url, supplier_name, supplier_email })
       .select('id, slug')
       .single();
 
@@ -121,7 +121,7 @@ exports.createProduct = async (req, res, next) => {
 // ── PUT /api/products/:id  (admin) ─────────────────────────────
 exports.updateProduct = async (req, res, next) => {
   try {
-    const { name, description, price, stock, category_id, image_url, is_active } = req.body;
+    const { name, description, price, stock, category_id, image_url, is_active, supplier_name, supplier_email } = req.body;
     const updates = {};
 
     if (name        !== undefined) { updates.name = name; updates.slug = slugify(name, { lower: true, strict: true }); }
@@ -130,6 +130,8 @@ exports.updateProduct = async (req, res, next) => {
     if (stock       !== undefined) updates.stock       = stock;
     if (category_id !== undefined) updates.category_id = category_id;
     if (image_url   !== undefined) updates.image_url   = image_url;
+    if (supplier_name !== undefined) updates.supplier_name = supplier_name;
+    if (supplier_email!== undefined) updates.supplier_email = supplier_email;
     if (is_active   !== undefined) updates.is_active   = is_active === true || is_active === 'true' || is_active === 1 || is_active === '1';
 
     const { error } = await supabase
