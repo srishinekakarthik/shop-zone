@@ -4,12 +4,19 @@ import { Link } from 'react-router-dom';
 import { adminAPI } from '../../api/services';
 import Spinner from '../../components/common/Spinner';
 
+import customersSvg from '../../svg/customers.svg';
+import productsSvg from '../../svg/products.svg';
+import cartSvg from '../../svg/cart.svg';
+import revenueSvg from '../../svg/revenue.svg';
+
 const STATUS_BADGE = { pending:'badge-warning', processing:'badge-info', shipped:'badge-info', delivered:'badge-success', cancelled:'badge-danger' };
 
 function StatCard({ icon, label, value, color }) {
   return (
     <div className="card" style={{ padding: '1.5rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
-      <div style={{ fontSize: '2.2rem', background: color + '20', borderRadius: 12, padding: '.75rem', lineHeight: 1 }}>{icon}</div>
+      <div style={{ background: color + '20', borderRadius: 12, padding: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        {icon}
+      </div>
       <div>
         <p style={{ color: '#64748b', fontSize: '.85rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.05em' }}>{label}</p>
         <p style={{ fontSize: '1.8rem', fontWeight: 800, color: '#1e293b' }}>{value}</p>
@@ -41,10 +48,10 @@ export default function AdminDashboard() {
 
       {/* Stats grid */}
       <div style={styles.statsGrid}>
-        <StatCard icon="👥" label="Customers"  value={data.totalUsers}    color="#2563eb" />
-        <StatCard icon="📦" label="Products"   value={data.totalProducts} color="#7c3aed" />
-        <StatCard icon="🛒" label="Orders"     value={data.totalOrders}   color="#059669" />
-        <StatCard icon="💰" label="Revenue"    value={`$${parseFloat(data.revenue).toFixed(2)}`} color="#f59e0b" />
+        <StatCard icon={<img src={customersSvg} alt="Customers" width="36" height="36" style={{ display: 'block' }} />} label="Customers"  value={data.totalUsers}    color="#2563eb" />
+        <StatCard icon={<img src={productsSvg} alt="Products" width="36" height="36" style={{ display: 'block' }} />} label="Products"   value={data.totalProducts} color="#7c3aed" />
+        <StatCard icon={<img src={cartSvg} alt="Orders" width="36" height="36" style={{ display: 'block' }} />} label="Orders"     value={data.totalOrders}   color="#059669" />
+        <StatCard icon={<img src={revenueSvg} alt="Revenue" width="36" height="36" style={{ display: 'block' }} />} label="Revenue"    value={`$${parseFloat(data.revenue).toFixed(2)}`} color="#f59e0b" />
       </div>
 
       {/* Recent orders */}

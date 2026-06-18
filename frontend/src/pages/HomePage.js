@@ -41,7 +41,10 @@ export default function HomePage() {
         <div style={styles.catGrid}>
           {categories.map(cat => (
             <Link key={cat.id} to={`/products?category=${cat.slug}`} style={styles.catCard}>
-              <span style={styles.catIcon}>🏷</span>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginBottom: '.5rem' }}>
+                <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path>
+                <line x1="7" y1="7" x2="7.01" y2="7"></line>
+              </svg>
               <span style={styles.catName}>{cat.name}</span>
             </Link>
           ))}
@@ -63,13 +66,12 @@ export default function HomePage() {
 }
 
 const styles = {
-  hero:        { background: 'linear-gradient(135deg,#1e293b,#2563eb)', color: '#fff', padding: '5rem 0' },
+  hero:        { background: '#1e293b', color: '#fff', padding: '5rem 0' },
   heroInner:   { display: 'flex', flexDirection: 'column', gap: '1rem' },
   heroH1:      { fontSize: 'clamp(1.8rem,4vw,3rem)', fontWeight: 800, lineHeight: 1.2 },
   heroSub:     { fontSize: '1.15rem', color: '#bfdbfe', maxWidth: '500px' },
   sectionTitle:{ fontSize: '1.5rem', fontWeight: 700, marginBottom: '1.25rem', color: '#1e293b' },
   catGrid:     { display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(140px,1fr))', gap: '1rem', marginBottom: '1.5rem' },
-  catCard:     { background: '#fff', border: '1.5px solid #e2e8f0', borderRadius: '10px', padding: '1.25rem', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '.5rem', cursor: 'pointer', transition: 'border-color .2s' },
-  catIcon:     { fontSize: '1.8rem' },
+  catCard:     { background: '#fff', border: '1.5px solid #e2e8f0', borderRadius: '10px', padding: '1.25rem', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'border-color .2s' },
   catName:     { fontWeight: 600, fontSize: '.9rem', color: '#1e293b', textAlign: 'center' },
 };

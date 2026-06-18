@@ -1,5 +1,6 @@
 // src/pages/admin/AdminUsers.js
 import React, { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { adminAPI } from '../../api/services';
 import Spinner from '../../components/common/Spinner';
 
@@ -21,6 +22,9 @@ export default function AdminUsers() {
 
   return (
     <div className="container page">
+      <div style={{ marginBottom: '1rem' }}>
+        <Link to="/admin" style={{ color: '#64748b', textDecoration: 'none', fontWeight: 600 }}>← Back to Dashboard</Link>
+      </div>
       <div style={styles.header}>
         <h1 style={styles.title}>Users ({users.length})</h1>
         <input

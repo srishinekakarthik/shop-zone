@@ -9,7 +9,7 @@ exports.getDashboard = async (_req, res, next) => {
       { count: totalProducts },
       { count: totalOrders },
       { data: revenueData },
-      { data: recentOrders },
+      { data: recentOrdersData },
     ] = await Promise.all([
       supabase.from('profiles').select('id', { count: 'exact', head: true }).eq('role', 'customer'),
       supabase.from('products').select('id', { count: 'exact', head: true }).eq('is_active', true),
@@ -17,20 +17,28 @@ exports.getDashboard = async (_req, res, next) => {
       supabase.from('orders').select('total_amount').neq('status', 'cancelled'),
       supabase
         .from('orders')
-        .select('id, status, total_amount, created_at, profiles ( name )')
+        .select('id, status, total_amount, created_at, user_id')
         .order('created_at', { ascending: false })
         .limit(10),
     ]);
 
-    // Sum revenue client-side (Supabase doesn't have a SUM shortcut in JS client)
+    // Sum revenue client-side
     const revenue = (revenueData || []).reduce((sum, o) => sum + parseFloat(o.total_amount), 0);
 
-    const shaped = (recentOrders || []).map(o => ({
+    // Fetch user profiles for recent orders
+    const userIds = [...new Set((recentOrdersData || []).map(o => o.user_id))];
+    const profilesMap = {};
+    if (userIds.length > 0) {
+      const { data: profiles } = await supabase.from('profiles').select('id, name').in('id', userIds);
+      (profiles || []).forEach(p => { profilesMap[p.id] = p.name; });
+    }
+
+    const shaped = (recentOrdersData || []).map(o => ({
       id:           o.id,
       status:       o.status,
       total_amount: o.total_amount,
       created_at:   o.created_at,
-      customer:     o.profiles?.name || 'Unknown',
+      customer:     profilesMap[o.user_id] || 'Unknown',
     }));
 
     res.json({
@@ -52,7 +60,7 @@ exports.getAllOrders = async (req, res, next) => {
 
     let query = supabase
       .from('orders')
-      .select('id, status, total_amount, payment_status, created_at, profiles ( name, id )', { count: 'exact' })
+      .select('id, status, total_amount, payment_status, created_at, user_id', { count: 'exact' })
       .order('created_at', { ascending: false })
       .range(from, to);
 
@@ -61,10 +69,18 @@ exports.getAllOrders = async (req, res, next) => {
     const { data: orders, error } = await query;
     if (error) throw error;
 
+    // Fetch user profiles
+    const userIds = [...new Set((orders || []).map(o => o.user_id))];
+    const profilesMap = {};
+    if (userIds.length > 0) {
+      const { data: profiles } = await supabase.from('profiles').select('id, name').in('id', userIds);
+      (profiles || []).forEach(p => { profilesMap[p.id] = p.name; });
+    }
+
     const shaped = (orders || []).map(o => ({
       ...o,
-      customer: o.profiles?.name,
-      profiles: undefined,
+      customer: profilesMap[o.user_id] || 'Unknown',
+      user_id: undefined,
     }));
 
     res.json({ orders: shaped });

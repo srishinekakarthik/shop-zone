@@ -23,7 +23,7 @@ export default function RegisterPage() {
     try {
       await signUp(form.email, form.password, form.name);
       setEmailSent(true);
-      toast.success('Account created! Check your email to confirm 🎉');
+      toast.success('Account created! Check your email to confirm.');
     } catch (err) {
       setError(err.message || 'Registration failed');
     } finally { setLoad(false); }
@@ -43,13 +43,12 @@ export default function RegisterPage() {
       <div style={s.page}>
         <div style={s.card}>
           <div style={{ textAlign: 'center', padding: '1rem 0' }}>
-            <div style={{ fontSize: '3rem', marginBottom: 16 }}>📧</div>
             <h2 style={{ fontWeight: 800, color: '#1e293b', marginBottom: 8 }}>Confirm your email</h2>
             <p style={{ color: '#64748b', lineHeight: 1.6 }}>
               We sent a confirmation link to <strong>{form.email}</strong>.
               Click the link in the email to activate your account, then sign in.
             </p>
-            <Link to="/login" style={{ ...s.primaryBtn, display: 'inline-block', marginTop: '1.5rem', textDecoration: 'none', textAlign: 'center' }}>
+            <Link to="/login" style={{ ...s.submitBtn, display: 'inline-block', marginTop: '1.5rem', textDecoration: 'none', textAlign: 'center' }}>
               Go to Sign In
             </Link>
           </div>
@@ -62,7 +61,6 @@ export default function RegisterPage() {
     <div style={s.page}>
       <div style={s.card}>
         <div style={s.brand}>
-          <span style={s.brandIcon}>🛍️</span>
           <h1 style={s.title}>Create account</h1>
           <p style={s.subtitle}>Join ShopZone — it's free</p>
         </div>
@@ -131,7 +129,7 @@ export default function RegisterPage() {
               required
             />
           </div>
-          <button style={s.primaryBtn} type="submit" disabled={loading}>
+          <button style={s.submitBtn} type="submit" disabled={loading}>
             {loading ? 'Creating account…' : 'Create Account'}
           </button>
         </form>
@@ -147,12 +145,8 @@ export default function RegisterPage() {
 
 const s = {
   page: {
-    minHeight: '85vh',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: '2rem',
-    background: 'linear-gradient(135deg, #f0f4ff 0%, #faf5ff 100%)',
+    minHeight: '80vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
+    background: '#f8fafc', padding: '2rem'
   },
   card: {
     background: '#fff',
@@ -201,17 +195,11 @@ const s = {
     outline: 'none',
     boxSizing: 'border-box',
   },
-  primaryBtn: {
-    width: '100%',
-    padding: '0.8rem',
-    background: 'linear-gradient(135deg, #2563eb, #7c3aed)',
-    color: '#fff',
-    border: 'none',
-    borderRadius: 12,
-    fontSize: '1rem',
-    fontWeight: 700,
-    cursor: 'pointer',
-    marginTop: '0.5rem',
+  submitBtn: {
+    width: '100%', padding: '.8rem',
+    background: '#2563eb', color: '#fff',
+    border: 'none', borderRadius: 8, fontSize: '1rem',
+    fontWeight: 700, cursor: 'pointer', transition: 'opacity 0.2s'
   },
   error: {
     background: '#fef2f2',

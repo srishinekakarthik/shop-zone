@@ -1,0 +1,231 @@
+{
+  "name": "ShopZone – Scheduled Analytics Report",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 8 * * *"
+            }
+          ]
+        }
+      },
+      "id": "trigger-daily",
+      "name": "Daily at 8 AM",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [240, 300],
+      "notes": "Runs every day at 08:00. For weekly: '0 8 * * 1'. For monthly: '0 8 1 * *'."
+    },
+    {
+      "parameters": {
+        "jsCode": "// Compute date window for the report\nconst now = new Date();\nconst today = now.toISOString().split('T')[0];\n\nconst yesterday = new Date(now);\nyesterday.setDate(yesterday.getDate() - 1);\nconst yesterdayStr = yesterday.toISOString().split('T')[0];\n\nconst weekAgo = new Date(now);\nweekAgo.setDate(weekAgo.getDate() - 7);\nconst weekAgoStr = weekAgo.toISOString().split('T')[0];\n\nconst monthAgo = new Date(now);\nmonthAgo.setMonth(monthAgo.getMonth() - 1);\nconst monthAgoStr = monthAgo.toISOString().split('T')[0];\n\nreturn {\n  today,\n  yesterday: yesterdayStr,\n  week_ago:  weekAgoStr,\n  month_ago: monthAgoStr,\n  report_period: 'daily',\n  generated_at: now.toISOString()\n};"
+      },
+      "id": "compute-dates",
+      "name": "Compute Date Windows",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/orders",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "apikey",        "value": "={{ $env.SUPABASE_SERVICE_KEY }}" },
+            { "name": "Authorization", "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}" },
+            { "name": "Content-Type",  "value": "application/json" },
+            { "name": "Prefer",        "value": "count=exact" }
+          ]
+        },
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            { "name": "select",     "value": "id,status,total_amount,payment_status,created_at" },
+            { "name": "created_at", "value": "=gte.{{ $json.yesterday }}T00:00:00Z" }
+          ]
+        }
+      },
+      "id": "fetch-yesterday-orders",
+      "name": "Yesterday's Orders",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [680, 180]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/products",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "apikey",        "value": "={{ $env.SUPABASE_SERVICE_KEY }}" },
+            { "name": "Authorization", "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}" }
+          ]
+        },
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            { "name": "select",    "value": "id,name,stock,is_active" },
+            { "name": "stock",     "value": "lte.5" },
+            { "name": "is_active", "value": "eq.true" }
+          ]
+        }
+      },
+      "id": "fetch-low-stock",
+      "name": "Low Stock Products (≤5)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [680, 320]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/profiles",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "apikey",        "value": "={{ $env.SUPABASE_SERVICE_KEY }}" },
+            { "name": "Authorization", "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}" },
+            { "name": "Prefer",        "value": "count=exact" }
+          ]
+        },
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            { "name": "select",     "value": "id" },
+            { "name": "created_at", "value": "=gte.{{ $('Compute Date Windows').item.json.yesterday }}T00:00:00Z" }
+          ]
+        }
+      },
+      "id": "fetch-new-users",
+      "name": "New Users Yesterday",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [680, 460]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/product_reviews",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "apikey",        "value": "={{ $env.SUPABASE_SERVICE_KEY }}" },
+            { "name": "Authorization", "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}" }
+          ]
+        },
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            { "name": "select",     "value": "sentiment,sentiment_score,rating" },
+            { "name": "created_at", "value": "=gte.{{ $('Compute Date Windows').item.json.yesterday }}T00:00:00Z" }
+          ]
+        }
+      },
+      "id": "fetch-reviews-yesterday",
+      "name": "Yesterday's Reviews",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [680, 600]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Aggregate all metrics into a unified analytics object\nconst dates      = $('Compute Date Windows').item.json;\nconst orders     = $('Yesterday\\'s Orders').item.json     || [];\nconst lowStock   = $('Low Stock Products (≤5)').item.json || [];\nconst newUsers   = $('New Users Yesterday').item.json     || [];\nconst reviews    = $('Yesterday\\'s Reviews').item.json   || [];\n\n// ── Order Metrics ──────────────────────────────────────────\nconst totalOrders   = orders.length;\nconst totalRevenue  = orders.reduce((sum, o) => sum + parseFloat(o.total_amount || 0), 0);\nconst avgOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;\nconst cancelledOrders = orders.filter(o => o.status === 'cancelled').length;\nconst cancelRate    = totalOrders > 0 ? (cancelledOrders / totalOrders * 100) : 0;\nconst paidOrders    = orders.filter(o => o.payment_status === 'paid').length;\n\n// ── Sentiment Metrics ──────────────────────────────────────\nconst totalReviews   = reviews.length;\nconst posReviews     = reviews.filter(r => r.sentiment === 'positive').length;\nconst negReviews     = reviews.filter(r => r.sentiment === 'negative').length;\nconst neutReviews    = reviews.filter(r => r.sentiment === 'neutral').length;\nconst avgRating      = totalReviews > 0\n  ? reviews.reduce((s, r) => s + (r.rating || 0), 0) / totalReviews\n  : 0;\nconst avgSentScore   = totalReviews > 0\n  ? reviews.reduce((s, r) => s + (r.sentiment_score || 0), 0) / totalReviews\n  : 0;\n\n// ── Compile ────────────────────────────────────────────────\nconst metrics = {\n  period:             'daily',\n  report_date:        dates.yesterday,\n  generated_at:       dates.generated_at,\n  orders: {\n    total:            totalOrders,\n    revenue:          parseFloat(totalRevenue.toFixed(2)),\n    avg_order_value:  parseFloat(avgOrderValue.toFixed(2)),\n    cancelled:        cancelledOrders,\n    cancel_rate_pct:  parseFloat(cancelRate.toFixed(1)),\n    paid:             paidOrders\n  },\n  customers: {\n    new_signups:      newUsers.length\n  },\n  reviews: {\n    total:            totalReviews,\n    positive:         posReviews,\n    neutral:          neutReviews,\n    negative:         negReviews,\n    avg_rating:       parseFloat(avgRating.toFixed(2)),\n    avg_sentiment:    parseFloat(avgSentScore.toFixed(3))\n  },\n  inventory: {\n    low_stock_count:  lowStock.length,\n    low_stock_items:  lowStock.map(p => ({ id: p.id, name: p.name, stock: p.stock }))\n  }\n};\n\nconsole.log('Analytics snapshot:', JSON.stringify(metrics, null, 2));\nreturn metrics;"
+      },
+      "id": "aggregate-metrics",
+      "name": "Aggregate Metrics",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [980, 380]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/analytics_snapshots",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "apikey",        "value": "={{ $env.SUPABASE_SERVICE_KEY }}" },
+            { "name": "Authorization", "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}" },
+            { "name": "Content-Type",  "value": "application/json" },
+            { "name": "Prefer",        "value": "resolution=merge-duplicates" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"snapshot_date\": \"{{ $json.report_date }}\",\n  \"period\": \"daily\",\n  \"metrics\": {{ JSON.stringify($json) }}\n}"
+      },
+      "id": "save-snapshot",
+      "name": "Save Snapshot to Supabase",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [1200, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Build a rich HTML email report\nconst m = $('Aggregate Metrics').item.json;\n\nconst sentimentBar = (pos, neu, neg, total) => {\n  if (total === 0) return '<em>No reviews</em>';\n  const p = Math.round(pos/total*100);\n  const n = Math.round(neu/total*100);\n  const neg_ = Math.round(neg/total*100);\n  return `\n    <table width=\"100%\" cellpadding=\"0\" cellspacing=\"2\">\n      <tr>\n        <td style=\"background:#22c55e;width:${p}%;height:12px;border-radius:3px;\"></td>\n        <td style=\"background:#f59e0b;width:${n}%;height:12px;\"></td>\n        <td style=\"background:#ef4444;width:${neg_}%;height:12px;border-radius:3px;\"></td>\n      </tr>\n      <tr>\n        <td style=\"color:#22c55e;font-size:11px;\">😊 ${pos} pos (${p}%)</td>\n        <td style=\"color:#f59e0b;font-size:11px;\">😐 ${neu} neu</td>\n        <td style=\"color:#ef4444;font-size:11px;\">😞 ${neg} neg (${neg_}%)</td>\n      </tr>\n    </table>`;\n};\n\nconst lowStockRows = m.inventory.low_stock_items.length > 0\n  ? m.inventory.low_stock_items.map(p =>\n      `<tr><td>${p.id}</td><td>${p.name}</td><td style=\"color:red\"><strong>${p.stock}</strong></td></tr>`\n    ).join('')\n  : '<tr><td colspan=\"3\">All products well stocked ✅</td></tr>';\n\nconst html = `\n<!DOCTYPE html><html><body style=\"font-family:Arial,sans-serif;max-width:600px;margin:auto;color:#333;\">\n<div style=\"background:#1e40af;color:white;padding:24px;border-radius:8px 8px 0 0;\">\n  <h1 style=\"margin:0;font-size:22px;\">🛍️ ShopZone Daily Report</h1>\n  <p style=\"margin:4px 0 0;opacity:0.8;\">Report for ${m.report_date} · Generated ${new Date(m.generated_at).toLocaleString()}</p>\n</div>\n\n<div style=\"background:#f8fafc;padding:20px;\">\n\n  <!-- Revenue Card -->\n  <div style=\"background:white;border-radius:8px;padding:16px;margin-bottom:16px;border-left:4px solid #1e40af;\">\n    <h2 style=\"margin:0 0 12px;font-size:16px;\">📦 Orders & Revenue</h2>\n    <table width=\"100%\">\n      <tr>\n        <td><strong>Total Orders</strong></td><td align=\"right\">${m.orders.total}</td>\n      </tr>\n      <tr>\n        <td><strong>Total Revenue</strong></td><td align=\"right\" style=\"color:#1e40af;font-size:18px;\"><strong>₹${m.orders.revenue.toLocaleString()}</strong></td>\n      </tr>\n      <tr>\n        <td><strong>Avg Order Value</strong></td><td align=\"right\">₹${m.orders.avg_order_value}</td>\n      </tr>\n      <tr>\n        <td><strong>Paid Orders</strong></td><td align=\"right\">${m.orders.paid}</td>\n      </tr>\n      <tr>\n        <td><strong>Cancelled</strong></td><td align=\"right\" style=\"color:${m.orders.cancel_rate_pct > 10 ? 'red' : '#333'}\">${m.orders.cancelled} (${m.orders.cancel_rate_pct}%)</td>\n      </tr>\n    </table>\n  </div>\n\n  <!-- Customers -->\n  <div style=\"background:white;border-radius:8px;padding:16px;margin-bottom:16px;border-left:4px solid #22c55e;\">\n    <h2 style=\"margin:0 0 8px;font-size:16px;\">👥 Customers</h2>\n    <p>New signups: <strong>${m.customers.new_signups}</strong></p>\n  </div>\n\n  <!-- Sentiment -->\n  <div style=\"background:white;border-radius:8px;padding:16px;margin-bottom:16px;border-left:4px solid #f59e0b;\">\n    <h2 style=\"margin:0 0 12px;font-size:16px;\">💬 Customer Sentiment</h2>\n    <p>Reviews received: <strong>${m.reviews.total}</strong> &nbsp;·&nbsp; Avg rating: <strong>${m.reviews.avg_rating}⭐</strong> &nbsp;·&nbsp; Sentiment score: <strong>${m.reviews.avg_sentiment}</strong></p>\n    ${sentimentBar(m.reviews.positive, m.reviews.neutral, m.reviews.negative, m.reviews.total)}\n  </div>\n\n  <!-- Inventory -->\n  <div style=\"background:white;border-radius:8px;padding:16px;margin-bottom:16px;border-left:4px solid #ef4444;\">\n    <h2 style=\"margin:0 0 12px;font-size:16px;\">📉 Low Stock Alert (≤5 units)</h2>\n    <table width=\"100%\" style=\"border-collapse:collapse;font-size:13px;\">\n      <tr style=\"background:#f1f5f9;\"><th align=\"left\">ID</th><th align=\"left\">Product</th><th align=\"left\">Stock</th></tr>\n      ${lowStockRows}\n    </table>\n  </div>\n\n</div>\n<div style=\"background:#1e293b;color:#94a3b8;padding:12px 20px;font-size:11px;border-radius:0 0 8px 8px;\">\n  ShopZone Automated Analytics · Powered by n8n\n</div>\n</body></html>`;\n\nreturn { html, subject: `ShopZone Daily Report – ${m.report_date} | ₹${m.orders.revenue.toLocaleString()} revenue, ${m.orders.total} orders` };"
+      },
+      "id": "build-email",
+      "name": "Build HTML Report",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1200, 460]
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $env.ADMIN_EMAIL }}",
+        "subject": "={{ $json.subject }}",
+        "emailType": "html",
+        "message": "={{ $json.html }}",
+        "options": {}
+      },
+      "id": "send-report-email",
+      "name": "Email Daily Report",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [1420, 460]
+    }
+  ],
+  "connections": {
+    "Daily at 8 AM":                { "main": [[{ "node": "Compute Date Windows",        "type": "main", "index": 0 }]] },
+    "Compute Date Windows":         { "main": [[{ "node": "Yesterday's Orders",           "type": "main", "index": 0 },
+                                               { "node": "Low Stock Products (≤5)",       "type": "main", "index": 0 },
+                                               { "node": "New Users Yesterday",           "type": "main", "index": 0 },
+                                               { "node": "Yesterday's Reviews",           "type": "main", "index": 0 }]] },
+    "Yesterday's Orders":           { "main": [[{ "node": "Aggregate Metrics",            "type": "main", "index": 0 }]] },
+    "Low Stock Products (≤5)":      { "main": [[{ "node": "Aggregate Metrics",            "type": "main", "index": 0 }]] },
+    "New Users Yesterday":          { "main": [[{ "node": "Aggregate Metrics",            "type": "main", "index": 0 }]] },
+    "Yesterday's Reviews":          { "main": [[{ "node": "Aggregate Metrics",            "type": "main", "index": 0 }]] },
+    "Aggregate Metrics": {
+      "main": [[
+        { "node": "Save Snapshot to Supabase", "type": "main", "index": 0 },
+        { "node": "Build HTML Report",         "type": "main", "index": 0 }
+      ]]
+    },
+    "Build HTML Report":            { "main": [[{ "node": "Email Daily Report",           "type": "main", "index": 0 }]] }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "saveExecutionProgress": true
+  },
+  "tags": ["shopzone", "analytics", "scheduled"],
+  "_meta": {
+    "instanceId": "shopzone-analytics-v1"
+  }
+}

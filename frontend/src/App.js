@@ -11,6 +11,7 @@ import { CartProvider } from './context/CartContext';
 import Navbar    from './components/common/Navbar';
 import Footer    from './components/common/Footer';
 import Spinner   from './components/common/Spinner';
+import ChatBot   from './components/common/ChatBot';
 
 // Public pages
 import HomePage        from './pages/HomePage';
@@ -78,6 +79,7 @@ function AppRoutes() {
           {/* 404 */}
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>
+        <ChatBot />
       </main>
       <Footer />
       <ToastContainer position="bottom-right" autoClose={3000} />

@@ -65,12 +65,37 @@ exports.getProduct = async (req, res, next) => {
 
     if (error || !product) return res.status(404).json({ message: 'Product not found' });
 
+    // Fetch reviews
+    const { data: reviews } = await supabase
+      .from('product_reviews')
+      .select('id, rating, title, body, created_at, user_id')
+      .eq('product_id', product.id)
+      .order('created_at', { ascending: false });
+
+    let reviewsWithProfiles = reviews || [];
+    if (reviews && reviews.length > 0) {
+      const userIds = [...new Set(reviews.map(r => r.user_id))];
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id, name')
+        .in('id', userIds);
+      
+      reviewsWithProfiles = reviews.map(r => {
+        const profile = (profiles || []).find(p => p.id === r.user_id);
+        return {
+          ...r,
+          user_name: profile?.name || 'Verified Customer'
+        };
+      });
+    }
+
     res.json({
       product: {
         ...product,
         category_name: product.categories?.name,
         category_slug: product.categories?.slug,
         categories:    undefined,
+        reviews:       reviewsWithProfiles
       },
     });
   } catch (err) { next(err); }
@@ -127,5 +152,24 @@ exports.deleteProduct = async (req, res, next) => {
 
     if (error) throw error;
     res.json({ message: 'Product deactivated' });
+  } catch (err) { next(err); }
+};
+
+// ── POST /api/products/:id/reviews ──────────────────────────────
+exports.addReview = async (req, res, next) => {
+  try {
+    const { rating, title, body, order_id } = req.body;
+    const { data, error } = await supabase
+      .from('product_reviews')
+      .insert({
+        product_id: parseInt(req.params.id),
+        user_id:    req.user.id,
+        order_id:   order_id || null,
+        rating, title, body
+      })
+      .select('id')
+      .single();
+    if (error) return res.status(400).json({ error: error.message });
+    res.status(201).json({ id: data.id });
   } catch (err) { next(err); }
 };

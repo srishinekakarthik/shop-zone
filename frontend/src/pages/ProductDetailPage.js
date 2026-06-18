@@ -17,6 +17,11 @@ export default function ProductDetailPage() {
   const [qty,      setQty]      = useState(1);
   const [adding,   setAdding]   = useState(false);
 
+  const [reviewRating, setReviewRating] = useState(5);
+  const [reviewTitle, setReviewTitle] = useState('');
+  const [reviewBody, setReviewBody] = useState('');
+  const [submittingReview, setSubmittingReview] = useState(false);
+
   useEffect(() => {
     setLoading(true);
     productAPI.getBySlug(slug)
@@ -30,10 +35,44 @@ export default function ProductDetailPage() {
     setAdding(true);
     try {
       await addItem(product.id, qty);
-      toast.success(`"${product.name}" added to cart! 🛒`);
+      toast.success(`"${product.name}" added to cart.`);
     } catch (err) {
       toast.error(err.response?.data?.message || 'Could not add to cart');
     } finally { setAdding(false); }
+  };
+
+  const handleReviewSubmit = async (e) => {
+    e.preventDefault();
+    if (!user) {
+      toast.error('Please login to leave a review.');
+      navigate('/login');
+      return;
+    }
+    if (!reviewTitle.trim() || !reviewBody.trim()) {
+      toast.error('Please fill out the review title and body.');
+      return;
+    }
+    setSubmittingReview(true);
+    try {
+      await productAPI.addReview(product.id, {
+        rating: reviewRating,
+        title: reviewTitle,
+        body: reviewBody,
+      });
+      toast.success('Thank you! Your review has been submitted.');
+      setReviewTitle('');
+      setReviewBody('');
+      setReviewRating(5);
+      
+      // Refresh the product to fetch the new review
+      const res = await productAPI.getBySlug(slug);
+      setProduct(res.data.product);
+      
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Could not submit review');
+    } finally {
+      setSubmittingReview(false);
+    }
   };
 
   if (loading) {
@@ -48,7 +87,6 @@ export default function ProductDetailPage() {
   if (!product) {
     return (
       <div style={{ textAlign: 'center', padding: '5rem 2rem' }}>
-        <div style={{ fontSize: '3rem' }}>😕</div>
         <h2 style={{ fontWeight: 700, margin: '1rem 0 .5rem' }}>Product not found</h2>
         <p style={{ color: '#64748b', marginBottom: '1.5rem' }}>This product may have been removed or doesn't exist.</p>
         <Link to="/products" className="btn btn-primary">Browse Products</Link>
@@ -57,6 +95,9 @@ export default function ProductDetailPage() {
   }
 
   const inStock = product.stock > 0;
+  const averageRating = product.reviews && product.reviews.length > 0 
+    ? (product.reviews.reduce((acc, r) => acc + r.rating, 0) / product.reviews.length).toFixed(1) 
+    : null;
 
   return (
     <div className="container page">
@@ -100,10 +141,15 @@ export default function ProductDetailPage() {
 
           <div style={s.priceRow}>
             <span style={s.price}>${parseFloat(product.price).toFixed(2)}</span>
+            {averageRating && (
+              <span style={{ color: '#eab308', fontWeight: 700, fontSize: '1.1rem', marginLeft: '.5rem' }}>
+                ★ {averageRating} <span style={{ color: '#64748b', fontSize: '.9rem', fontWeight: 400 }}>({product.reviews.length})</span>
+              </span>
+            )}
             {inStock ? (
-              <span style={s.stockBadge}>✓ In Stock ({product.stock})</span>
+              <span style={s.stockBadge}>In Stock ({product.stock})</span>
             ) : (
-              <span style={{ ...s.stockBadge, background: '#fef2f2', color: '#dc2626' }}>✗ Out of Stock</span>
+              <span style={{ ...s.stockBadge, background: '#fef2f2', color: '#dc2626' }}>Out of Stock</span>
             )}
           </div>
 
@@ -139,7 +185,7 @@ export default function ProductDetailPage() {
                 onClick={handleAddToCart}
                 disabled={adding}
               >
-                {adding ? 'Adding…' : '🛒 Add to Cart'}
+                {adding ? 'Adding...' : 'Add to Cart'}
               </button>
 
               <button
@@ -168,6 +214,87 @@ export default function ProductDetailPage() {
           </div>
         </div>
       </div>
+
+      {/* Review Section */}
+      <div style={s.reviewSection}>
+        <h2 style={s.reviewSectionTitle}>Customer Reviews</h2>
+        
+        <div style={s.reviewLayout}>
+          <div style={s.reviewsList}>
+            {product.reviews && product.reviews.length > 0 ? (
+              product.reviews.map(review => (
+                <div key={review.id} style={s.reviewItem}>
+                  <div style={s.reviewHeader}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '.5rem' }}>
+                      <div style={s.avatarPlaceholder}>
+                        {review.user_name ? review.user_name.charAt(0).toUpperCase() : 'V'}
+                      </div>
+                      <span style={s.reviewAuthor}>{review.user_name || 'Verified Customer'}</span>
+                    </div>
+                    <span style={s.reviewDate}>{new Date(review.created_at).toLocaleDateString()}</span>
+                  </div>
+                  <div style={{ marginBottom: '.5rem' }}>
+                    <span style={s.reviewStars}>{'★'.repeat(review.rating)}{'☆'.repeat(5 - review.rating)}</span>
+                  </div>
+                  <h4 style={s.reviewTitleDisplay}>{review.title}</h4>
+                  <p style={s.reviewBodyDisplay}>{review.body}</p>
+                </div>
+              ))
+            ) : (
+              <div style={s.noReviews}>
+                <p>No reviews yet. Be the first to share your thoughts!</p>
+              </div>
+            )}
+          </div>
+
+          <div style={s.reviewFormCard}>
+            <h3 style={s.reviewFormTitle}>Write a Review</h3>
+            <form onSubmit={handleReviewSubmit} style={s.reviewForm}>
+              <div style={s.formGroup}>
+                <label style={s.label}>Rating</label>
+                <select 
+                  style={s.select} 
+                  value={reviewRating} 
+                  onChange={e => setReviewRating(Number(e.target.value))}
+                >
+                  <option value={5}>5 - Excellent</option>
+                  <option value={4}>4 - Good</option>
+                  <option value={3}>3 - Average</option>
+                  <option value={2}>2 - Poor</option>
+                  <option value={1}>1 - Terrible</option>
+                </select>
+              </div>
+              <div style={s.formGroup}>
+                <label style={s.label}>Title</label>
+                <input
+                  style={s.input}
+                  placeholder="Brief summary of your review"
+                  value={reviewTitle}
+                  onChange={e => setReviewTitle(e.target.value)}
+                />
+              </div>
+              <div style={s.formGroup}>
+                <label style={s.label}>Review</label>
+                <textarea
+                  style={s.textarea}
+                  placeholder="What did you like or dislike?"
+                  rows={4}
+                  value={reviewBody}
+                  onChange={e => setReviewBody(e.target.value)}
+                />
+              </div>
+              <button 
+                type="submit" 
+                style={{ ...s.submitBtn, opacity: submittingReview ? 0.7 : 1 }}
+                disabled={submittingReview}
+              >
+                {submittingReview ? 'Submitting...' : 'Submit Review'}
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+
     </div>
   );
 }
@@ -207,9 +334,9 @@ const s = {
   qtyNum:      { padding: '0 1rem', fontWeight: 700, fontSize: '1rem', minWidth: 30, textAlign: 'center' },
   addBtn: {
     padding: '0.9rem 1.5rem',
-    background: 'linear-gradient(135deg, #2563eb, #7c3aed)',
-    color: '#fff', border: 'none', borderRadius: 12,
-    fontSize: '1rem', fontWeight: 700, cursor: 'pointer',
+    background: '#2563eb',
+    color: '#fff', border: 'none', borderRadius: 8,
+    fontSize: '1rem', fontWeight: 600, cursor: 'pointer',
     transition: 'opacity 0.2s',
   },
   buyNowBtn: {
@@ -228,4 +355,29 @@ const s = {
     borderRadius: '50%',
     animation: 'spin 0.8s linear infinite',
   },
+  reviewSection: { marginTop: '4rem', paddingTop: '2rem', borderTop: '1px solid #e2e8f0' },
+  reviewSectionTitle: { fontSize: '1.5rem', fontWeight: 800, marginBottom: '1.5rem', color: '#0f172a' },
+  reviewFormCard: { background: '#f8fafc', padding: '1.5rem', borderRadius: 16, border: '1px solid #e2e8f0', maxWidth: 600 },
+  reviewFormTitle: { fontSize: '1.2rem', fontWeight: 700, marginBottom: '1rem', color: '#1e293b' },
+  reviewForm: { display: 'flex', flexDirection: 'column', gap: '1rem' },
+  formGroup: { display: 'flex', flexDirection: 'column', gap: '.4rem' },
+  label: { fontSize: '.85rem', fontWeight: 600, color: '#475569' },
+  input: { padding: '.75rem', borderRadius: 8, border: '1px solid #cbd5e1', fontSize: '.95rem', outline: 'none' },
+  select: { padding: '.75rem', borderRadius: 8, border: '1px solid #cbd5e1', fontSize: '.95rem', outline: 'none', background: '#fff' },
+  textarea: { padding: '.75rem', borderRadius: 8, border: '1px solid #cbd5e1', fontSize: '.95rem', outline: 'none', resize: 'vertical' },
+  submitBtn: {
+    padding: '.75rem 1.5rem', background: '#0f172a', color: '#fff', border: 'none',
+    borderRadius: 8, fontSize: '.95rem', fontWeight: 600, cursor: 'pointer', alignSelf: 'flex-start'
+  },
+  reviewLayout: { display: 'flex', gap: '2rem', flexWrap: 'wrap', alignItems: 'flex-start' },
+  reviewsList: { flex: 1, minWidth: 280, display: 'flex', flexDirection: 'column', gap: '1.5rem' },
+  reviewItem: { padding: '1.25rem', border: '1px solid #e2e8f0', borderRadius: 12, background: '#fff' },
+  reviewHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '.5rem' },
+  avatarPlaceholder: { width: 32, height: 32, borderRadius: '50%', background: '#e2e8f0', color: '#475569', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '.9rem' },
+  reviewAuthor: { fontWeight: 600, color: '#0f172a', fontSize: '.95rem' },
+  reviewStars: { color: '#eab308', letterSpacing: '2px', fontSize: '1.1rem' },
+  reviewDate: { fontSize: '.85rem', color: '#94a3b8' },
+  reviewTitleDisplay: { fontSize: '1rem', fontWeight: 700, marginBottom: '.5rem', color: '#1e293b' },
+  reviewBodyDisplay: { fontSize: '.95rem', color: '#475569', lineHeight: 1.5 },
+  noReviews: { padding: '2rem', textAlign: 'center', background: '#f8fafc', borderRadius: 12, color: '#64748b', border: '1px dashed #cbd5e1' }
 };

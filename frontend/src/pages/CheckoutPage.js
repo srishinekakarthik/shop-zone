@@ -27,7 +27,7 @@ export default function CheckoutPage() {
     try {
       const res = await orderAPI.create({ shipping_address: address, payment_method: payment });
       await clearCart();
-      toast.success('Order placed successfully! 🎉');
+      toast.success('Order placed successfully!');
       navigate(`/orders/${res.data.orderId}`);
     } catch (err) {
       toast.error(err.response?.data?.message || 'Checkout failed');

@@ -9,4 +9,6 @@ router.post('/',       protect, adminOnly, ctrl.createProduct);
 router.put('/:id',     protect, adminOnly, ctrl.updateProduct);
 router.delete('/:id',  protect, adminOnly, ctrl.deleteProduct);
 
+router.post('/:id/reviews', protect, ctrl.addReview);
+
 module.exports = router;

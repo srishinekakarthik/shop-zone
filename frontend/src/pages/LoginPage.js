@@ -21,7 +21,7 @@ export default function LoginPage() {
     setLoad(true); setError('');
     try {
       await signIn(email, password);
-      toast.success('Welcome back! 👋');
+      toast.success('Welcome back!');
       navigate('/');
     } catch (err) {
       setError(err.message || 'Login failed');
@@ -35,7 +35,7 @@ export default function LoginPage() {
     try {
       await signInWithMagicLink(email);
       setMagicSent(true);
-      toast.success('Magic link sent! Check your email 📬');
+      toast.success('Magic link sent! Check your email.');
     } catch (err) {
       setError(err.message || 'Failed to send magic link');
     } finally { setLoad(false); }
@@ -56,7 +56,6 @@ export default function LoginPage() {
     <div style={s.page}>
       <div style={s.card}>
         <div style={s.brand}>
-          <span style={s.brandIcon}>🛍️</span>
           <h1 style={s.title}>Welcome back</h1>
           <p style={s.subtitle}>Sign in to your ShopZone account</p>
         </div>
@@ -136,18 +135,17 @@ export default function LoginPage() {
               />
             </div>
             <button style={s.primaryBtn} type="submit" disabled={loading}>
-              {loading ? 'Sending…' : 'Send Magic Link ✨'}
+              {loading ? 'Sending…' : 'Send Magic Link'}
             </button>
           </form>
         )}
 
         {magicSent && (
-          <div style={s.magicSuccess}>
-            <div style={{ fontSize: '2.5rem', marginBottom: 12 }}>📬</div>
-            <p style={{ fontWeight: 700, marginBottom: 6, color: '#1e293b' }}>Check your email!</p>
-            <p style={{ color: '#64748b', fontSize: '.9rem' }}>
-              We sent a magic sign-in link to <strong>{email}</strong>.
-              Click it to log in — no password needed.
+          <div style={{ textAlign: 'center', padding: '1rem 0' }}>
+            <h2 style={{ fontWeight: 800, color: '#1e293b', marginBottom: 8 }}>Check your email</h2>
+            <p style={{ color: '#64748b', lineHeight: 1.6 }}>
+              We sent a magic sign-in link to <strong>{email}</strong>.<br/>
+              Click the link to log in instantly.
             </p>
           </div>
         )}
@@ -163,12 +161,8 @@ export default function LoginPage() {
 
 const s = {
   page: {
-    minHeight: '85vh',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: '2rem',
-    background: 'linear-gradient(135deg, #f0f4ff 0%, #faf5ff 100%)',
+    minHeight: '80vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
+    background: '#f8fafc', padding: '2rem'
   },
   card: {
     background: '#fff',
@@ -245,17 +239,10 @@ const s = {
     transition: 'border-color 0.2s',
   },
   primaryBtn: {
-    width: '100%',
-    padding: '0.8rem',
-    background: 'linear-gradient(135deg, #2563eb, #7c3aed)',
-    color: '#fff',
-    border: 'none',
-    borderRadius: 12,
-    fontSize: '1rem',
-    fontWeight: 700,
-    cursor: 'pointer',
-    marginTop: '0.5rem',
-    transition: 'opacity 0.2s',
+    width: '100%', padding: '.8rem',
+    background: '#2563eb', color: '#fff',
+    border: 'none', borderRadius: 8, fontSize: '1rem',
+    fontWeight: 700, cursor: 'pointer', transition: 'opacity 0.2s', marginTop: '.5rem'
   },
   error: {
     background: '#fef2f2',

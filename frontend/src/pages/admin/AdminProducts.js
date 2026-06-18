@@ -1,5 +1,6 @@
 // src/pages/admin/AdminProducts.js
 import React, { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { productAPI, categoryAPI } from '../../api/services';
 import { toast } from 'react-toastify';
 import Spinner from '../../components/common/Spinner';
@@ -64,6 +65,9 @@ export default function AdminProducts() {
 
   return (
     <div className="container page">
+      <div style={{ marginBottom: '1rem' }}>
+        <Link to="/admin" style={{ color: '#64748b', textDecoration: 'none', fontWeight: 600 }}>← Back to Dashboard</Link>
+      </div>
       <div style={styles.header}>
         <h1 style={styles.title}>Products ({products.length})</h1>
         <button className="btn btn-primary" onClick={openAdd}>+ Add Product</button>
