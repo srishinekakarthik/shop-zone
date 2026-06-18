@@ -4,14 +4,22 @@
     {
       "parameters": {
         "rule": {
-          "interval": [{ "field": "minutes", "minutesInterval": 15 }]
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 15
+            }
+          ]
         }
       },
       "id": "trigger-schedule",
       "name": "Every 15 Minutes",
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.1,
-      "position": [240, 300]
+      "position": [
+        240,
+        300
+      ]
     },
     {
       "parameters": {
@@ -22,15 +30,27 @@
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            { "name": "apikey",        "value": "={{ $env.SUPABASE_SERVICE_KEY }}" },
-            { "name": "Authorization", "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}" },
-            { "name": "Content-Type",  "value": "application/json" }
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
           ]
         },
         "sendBody": true,
         "bodyParameters": {
           "parameters": [
-            { "name": "batch_size", "value": "50" }
+            {
+              "name": "batch_size",
+              "value": "50"
+            }
           ]
         }
       },
@@ -38,18 +58,26 @@
       "name": "Fetch Unanalyzed Reviews",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
-      "position": [460, 300]
+      "position": [
+        460,
+        300
+      ]
     },
     {
       "parameters": {
         "conditions": {
-          "options": { "caseSensitive": false },
+          "options": {
+            "caseSensitive": false
+          },
           "conditions": [
             {
               "id": "check-length",
               "leftValue": "={{ $json.length }}",
               "rightValue": 0,
-              "operator": { "type": "number", "operation": "gt" }
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
             }
           ]
         }
@@ -58,7 +86,10 @@
       "name": "Any Reviews?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
-      "position": [680, 300]
+      "position": [
+        680,
+        300
+      ]
     },
     {
       "parameters": {
@@ -69,16 +100,22 @@
       "name": "Split Into Items",
       "type": "n8n-nodes-base.splitOut",
       "typeVersion": 1,
-      "position": [900, 220]
+      "position": [
+        900,
+        220
+      ]
     },
     {
       "parameters": {
         "method": "POST",
-        "url": "=https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={{ $env.GEMINI_API_KEY }}",
+        "url": "=https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={{ $env.GEMINI_API_KEY }}",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            { "name": "Content-Type", "value": "application/json" }
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
           ]
         },
         "sendBody": true,
@@ -89,7 +126,10 @@
       "name": "Analyze with Gemini",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
-      "position": [1120, 220]
+      "position": [
+        1120,
+        220
+      ]
     },
     {
       "parameters": {
@@ -99,7 +139,10 @@
       "name": "Parse & Enrich",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1340, 220]
+      "position": [
+        1340,
+        220
+      ]
     },
     {
       "parameters": {
@@ -110,9 +153,18 @@
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            { "name": "apikey",        "value": "={{ $env.SUPABASE_SERVICE_KEY }}" },
-            { "name": "Authorization", "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}" },
-            { "name": "Content-Type",  "value": "application/json" }
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
           ]
         },
         "sendBody": true,
@@ -123,17 +175,25 @@
       "name": "Write to Supabase",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
-      "position": [1560, 220]
+      "position": [
+        1560,
+        220
+      ]
     },
     {
       "parameters": {
         "conditions": {
-          "options": { "caseSensitive": false },
+          "options": {
+            "caseSensitive": false
+          },
           "conditions": [
             {
               "leftValue": "={{ $json.urgency }}",
               "rightValue": "low",
-              "operator": { "type": "string", "operation": "notEquals" }
+              "operator": {
+                "type": "string",
+                "operation": "notEquals"
+              }
             }
           ]
         }
@@ -142,7 +202,10 @@
       "name": "Medium or High Urgency?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
-      "position": [1780, 220],
+      "position": [
+        1780,
+        220
+      ],
       "notes": "Alerts fire for both medium and high urgency (not just negative sentiment)"
     },
     {
@@ -150,43 +213,133 @@
         "sendTo": "={{ $json.supplier_email || $env.ADMIN_EMAIL }}",
         "subject": "={{ $json.urgency === 'high' ? '🚨 HIGH' : '⚠️ MEDIUM' }} Urgency Review – Product #{{ $json.product_id }} | {{ $json.sentiment_label }}",
         "emailType": "html",
-        "message": "=<div style=\"font-family:Arial,sans-serif;max-width:600px;\">\n\n<div style=\"background:{{ $json.urgency === 'high' ? '#dc2626' : '#d97706' }};color:white;padding:16px 20px;border-radius:8px 8px 0 0;\">\n  <h2 style=\"margin:0;\">{{ $json.urgency === 'high' ? '🚨 HIGH URGENCY' : '⚠️ MEDIUM URGENCY' }} Review Alert</h2>\n  <p style=\"margin:4px 0 0;opacity:0.85;\">Requires {{ $json.urgency === 'high' ? 'immediate' : 'prompt' }} attention</p>\n</div>\n\n<div style=\"background:#f8fafc;padding:20px;\">\n\n  <table style=\"width:100%;border-collapse:collapse;background:white;border-radius:8px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,0.08);\">\n    <tr style=\"background:#f1f5f9;\"><td style=\"padding:10px 14px;font-weight:bold;width:40%;\">Review ID</td><td style=\"padding:10px 14px;\">#{{ $json.review_id }}</td></tr>\n    <tr><td style=\"padding:10px 14px;font-weight:bold;\">Product ID</td><td style=\"padding:10px 14px;\">#{{ $json.product_id }}</td></tr>\n    <tr style=\"background:#f1f5f9;\"><td style=\"padding:10px 14px;font-weight:bold;\">Star Rating</td><td style=\"padding:10px 14px;\">{{ $json.rating }}/5 ⭐</td></tr>\n    <tr><td style=\"padding:10px 14px;font-weight:bold;\">Sentiment</td><td style=\"padding:10px 14px;\"><strong style=\"color:{{ $json.sentiment === 'negative' ? '#dc2626' : $json.sentiment === 'positive' ? '#16a34a' : '#d97706' }};\">{{ $json.sentiment_label }}</strong> (score: {{ $json.sentiment_score }})</td></tr>\n    <tr style=\"background:#f1f5f9;\"><td style=\"padding:10px 14px;font-weight:bold;\">Urgency</td><td style=\"padding:10px 14px;\"><strong style=\"color:{{ $json.urgency === 'high' ? '#dc2626' : '#d97706' }};\">{{ $json.urgency.toUpperCase() }}</strong></td></tr>\n    <tr><td style=\"padding:10px 14px;font-weight:bold;\">Urgency Reason</td><td style=\"padding:10px 14px;\"><em>{{ $json.urgency_reason }}</em></td></tr>\n  </table>\n\n  <div style=\"margin-top:16px;background:white;border-left:4px solid {{ $json.urgency === 'high' ? '#dc2626' : '#d97706' }};padding:14px 16px;border-radius:0 8px 8px 0;box-shadow:0 1px 4px rgba(0,0,0,0.06);\">\n    <p style=\"margin:0 0 6px;font-weight:bold;\">{{ $json.original_title || 'Customer Review' }}</p>\n    <p style=\"margin:0;color:#374151;\">{{ $json.original_body }}</p>\n  </div>\n\n  <p style=\"margin-top:16px;color:#6b7280;font-size:13px;\">Analyzed by Gemini 2.0 Flash · ShopZone n8n Workflow</p>\n</div>\n</div>",
+        "message": "=<div style=\"font-family:Arial,sans-serif;max-width:600px;\">\n\n<div style=\"background:{{ $json.urgency === 'high' ? '#dc2626' : '#d97706' }};color:white;padding:16px 20px;border-radius:8px 8px 0 0;\">\n  <h2 style=\"margin:0;\">{{ $json.urgency === 'high' ? '🚨 HIGH URGENCY' : '⚠️ MEDIUM URGENCY' }} Review Alert</h2>\n  <p style=\"margin:4px 0 0;opacity:0.85;\">Requires {{ $json.urgency === 'high' ? 'immediate' : 'prompt' }} attention</p>\n</div>\n\n<div style=\"background:#f8fafc;padding:20px;\">\n\n  <table style=\"width:100%;border-collapse:collapse;background:white;border-radius:8px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,0.08);\">\n    <tr style=\"background:#f1f5f9;\"><td style=\"padding:10px 14px;font-weight:bold;width:40%;\">Review ID</td><td style=\"padding:10px 14px;\">#{{ $json.review_id }}</td></tr>\n    <tr><td style=\"padding:10px 14px;font-weight:bold;\">Product ID</td><td style=\"padding:10px 14px;\">#{{ $json.product_id }}</td></tr>\n    <tr style=\"background:#f1f5f9;\"><td style=\"padding:10px 14px;font-weight:bold;\">Star Rating</td><td style=\"padding:10px 14px;\">{{ $json.rating }}/5 ⭐</td></tr>\n    <tr><td style=\"padding:10px 14px;font-weight:bold;\">Sentiment</td><td style=\"padding:10px 14px;\"><strong style=\"color:{{ $json.sentiment === 'negative' ? '#dc2626' : $json.sentiment === 'positive' ? '#16a34a' : '#d97706' }};\">{{ $json.sentiment_label }}</strong> (score: {{ $json.sentiment_score }})</td></tr>\n    <tr style=\"background:#f1f5f9;\"><td style=\"padding:10px 14px;font-weight:bold;\">Urgency</td><td style=\"padding:10px 14px;\"><strong style=\"color:{{ $json.urgency === 'high' ? '#dc2626' : '#d97706' }};\">{{ $json.urgency.toUpperCase() }}</strong></td></tr>\n    <tr><td style=\"padding:10px 14px;font-weight:bold;\">Urgency Reason</td><td style=\"padding:10px 14px;\"><em>{{ $json.urgency_reason }}</em></td></tr>\n  </table>\n\n  <div style=\"margin-top:16px;background:white;border-left:4px solid {{ $json.urgency === 'high' ? '#dc2626' : '#d97706' }};padding:14px 16px;border-radius:0 8px 8px 0;box-shadow:0 1px 4px rgba(0,0,0,0.06);\">\n    <p style=\"margin:0 0 6px;font-weight:bold;\">{{ $json.original_title || 'Customer Review' }}</p>\n    <p style=\"margin:0;color:#374151;\">{{ $json.original_body }}</p>\n  </div>\n\n  <p style=\"margin-top:16px;color:#6b7280;font-size:13px;\">Analyzed by Gemini 2.5 Flash · ShopZone n8n Workflow</p>\n</div>\n</div>",
         "options": {}
       },
       "id": "alert-email",
       "name": "Alert Admin (Email)",
       "type": "n8n-nodes-base.gmail",
       "typeVersion": 2.1,
-      "position": [2000, 140]
+      "position": [
+        2000,
+        140
+      ]
     },
     {
       "parameters": {
-        "jsCode": "// Aggregate batch results for logging\nconst allItems = $input.all();\n\nconst summary = {\n  processed:       allItems.length,\n  // Sentiment breakdown\n  positive:        allItems.filter(i => i.json.sentiment === 'positive').length,\n  neutral:         allItems.filter(i => i.json.sentiment === 'neutral').length,\n  negative:        allItems.filter(i => i.json.sentiment === 'negative').length,\n  // Urgency breakdown\n  urgency_high:    allItems.filter(i => i.json.urgency === 'high').length,\n  urgency_medium:  allItems.filter(i => i.json.urgency === 'medium').length,\n  urgency_low:     allItems.filter(i => i.json.urgency === 'low').length,\n  // Alerts fired (medium + high)\n  alerts_sent:     allItems.filter(i => i.json.urgency !== 'low').length,\n  timestamp:       new Date().toISOString(),\n  model:           'gemini-2.0-flash'\n};\n\nconsole.log('Sentiment + Urgency batch summary:', JSON.stringify(summary, null, 2));\nreturn summary;"
+        "jsCode": "// Aggregate batch results for logging\nconst allItems = $input.all();\n\nconst summary = {\n  processed:       allItems.length,\n  // Sentiment breakdown\n  positive:        allItems.filter(i => i.json.sentiment === 'positive').length,\n  neutral:         allItems.filter(i => i.json.sentiment === 'neutral').length,\n  negative:        allItems.filter(i => i.json.sentiment === 'negative').length,\n  // Urgency breakdown\n  urgency_high:    allItems.filter(i => i.json.urgency === 'high').length,\n  urgency_medium:  allItems.filter(i => i.json.urgency === 'medium').length,\n  urgency_low:     allItems.filter(i => i.json.urgency === 'low').length,\n  // Alerts fired (medium + high)\n  alerts_sent:     allItems.filter(i => i.json.urgency !== 'low').length,\n  timestamp:       new Date().toISOString(),\n  model:           'gemini-2.5-flash'\n};\n\nconsole.log('Sentiment + Urgency batch summary:', JSON.stringify(summary, null, 2));\nreturn summary;"
       },
       "id": "log-summary",
       "name": "Log Batch Summary",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [2000, 340]
+      "position": [
+        2000,
+        340
+      ]
     }
   ],
   "connections": {
-    "Every 15 Minutes":         { "main": [[{ "node": "Fetch Unanalyzed Reviews",   "type": "main", "index": 0 }]] },
-    "Fetch Unanalyzed Reviews": { "main": [[{ "node": "Any Reviews?",               "type": "main", "index": 0 }]] },
-    "Any Reviews?": {
+    "Every 15 Minutes": {
       "main": [
-        [{ "node": "Split Into Items",  "type": "main", "index": 0 }],
-        [{ "node": "Log Batch Summary", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "Fetch Unanalyzed Reviews",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
-    "Split Into Items":         { "main": [[{ "node": "Analyze with Gemini",        "type": "main", "index": 0 }]] },
-    "Analyze with Gemini":      { "main": [[{ "node": "Parse & Enrich",             "type": "main", "index": 0 }]] },
-    "Parse & Enrich":           { "main": [[{ "node": "Write to Supabase",          "type": "main", "index": 0 }]] },
-    "Write to Supabase":        { "main": [[{ "node": "Medium or High Urgency?",    "type": "main", "index": 0 }]] },
+    "Fetch Unanalyzed Reviews": {
+      "main": [
+        [
+          {
+            "node": "Any Reviews?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Any Reviews?": {
+      "main": [
+        [
+          {
+            "node": "Split Into Items",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Log Batch Summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Into Items": {
+      "main": [
+        [
+          {
+            "node": "Analyze with Gemini",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Analyze with Gemini": {
+      "main": [
+        [
+          {
+            "node": "Parse & Enrich",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse & Enrich": {
+      "main": [
+        [
+          {
+            "node": "Write to Supabase",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Write to Supabase": {
+      "main": [
+        [
+          {
+            "node": "Medium or High Urgency?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
     "Medium or High Urgency?": {
       "main": [
-        [{ "node": "Alert Admin (Email)", "type": "main", "index": 0 }],
-        [{ "node": "Log Batch Summary",   "type": "main", "index": 0 }]
+        [
+          {
+            "node": "Alert Admin (Email)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Log Batch Summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     }
   },
@@ -197,7 +350,13 @@
     "errorWorkflow": ""
   },
   "staticData": null,
-  "tags": ["shopzone", "sentiment", "urgency", "analytics", "gemini"],
+  "tags": [
+    "shopzone",
+    "sentiment",
+    "urgency",
+    "analytics",
+    "gemini"
+  ],
   "_meta": {
     "instanceId": "shopzone-sentiment-v2-gemini"
   }

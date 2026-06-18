@@ -2,6 +2,7 @@
 // ShopZone LangChain-powered customer support chat widget
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
+import ReactMarkdown from 'react-markdown';
 
 const CHATBOT_URL = process.env.REACT_APP_CHATBOT_URL || 'http://localhost:5001';
 
@@ -248,7 +249,9 @@ export default function ChatBot() {
                   lineHeight:   '1.5',
                   boxShadow:    '0 1px 4px rgba(0,0,0,0.08)',
                 }}>
-                  {msg.text}
+                  <div className="markdown-body" style={{ margin: 0, padding: 0 }}>
+                    <ReactMarkdown>{msg.text}</ReactMarkdown>
+                  </div>
                   <div style={{
                     fontSize: '10px',
                     opacity:  0.6,
