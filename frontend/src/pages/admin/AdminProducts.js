@@ -5,7 +5,7 @@ import { productAPI, categoryAPI } from '../../api/services';
 import { toast } from 'react-toastify';
 import Spinner from '../../components/common/Spinner';
 
-const EMPTY_FORM = { name: '', description: '', price: '', stock: '', category_id: '', image_url: '', supplier_name: '', supplier_email: '', is_active: 1 };
+const EMPTY_FORM = { name: '', description: '', price: '', stock: '', category_id: '', new_category_name: '', image_url: '', supplier_name: '', supplier_email: '', is_active: 1 };
 
 export default function AdminProducts() {
   const [products,   setProducts]   = useState([]);
@@ -26,7 +26,7 @@ export default function AdminProducts() {
 
   const openAdd  = () => { setForm(EMPTY_FORM); setEditId(null); setShowForm(true); };
   const openEdit = (p) => {
-    setForm({ name: p.name, description: p.description || '', price: p.price, stock: p.stock, category_id: p.category_id, image_url: p.image_url || '', supplier_name: p.supplier_name || '', supplier_email: p.supplier_email || '', is_active: p.is_active });
+    setForm({ name: p.name, description: p.description || '', price: p.price, stock: p.stock, category_id: p.category_id, new_category_name: '', image_url: p.image_url || '', supplier_name: p.supplier_name || '', supplier_email: p.supplier_email || '', is_active: p.is_active });
     setEditId(p.id); setShowForm(true);
   };
 
@@ -43,11 +43,25 @@ export default function AdminProducts() {
   const handleSave = async e => {
     e.preventDefault(); setSaving(true);
     try {
+      let finalCategoryId = form.category_id;
+      if (form.category_id === 'new') {
+        if (!form.new_category_name.trim()) {
+          toast.error('Please enter a new category name');
+          setSaving(false);
+          return;
+        }
+        const catRes = await categoryAPI.create({ name: form.new_category_name.trim() });
+        finalCategoryId = catRes.data.id;
+      }
+      
+      const payload = { ...form, category_id: finalCategoryId };
+      delete payload.new_category_name;
+
       if (editId) {
-        await productAPI.update(editId, form);
+        await productAPI.update(editId, payload);
         toast.success('Product updated');
       } else {
-        await productAPI.create(form);
+        await productAPI.create(payload);
         toast.success('Product created');
       }
       setShowForm(false); fetchAll();
@@ -88,8 +102,15 @@ export default function AdminProducts() {
                 <select className="form-control" name="category_id" value={form.category_id} onChange={handleChange} required>
                   <option value="">Select…</option>
                   {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                  <option value="new" style={{ fontWeight: 'bold' }}>+ Add Custom Category...</option>
                 </select>
               </div>
+              {form.category_id === 'new' && (
+                <div className="form-group">
+                  <label>New Category Name *</label>
+                  <input className="form-control" name="new_category_name" value={form.new_category_name} onChange={handleChange} required placeholder="e.g. Vintage Electronics" />
+                </div>
+              )}
               <div className="form-group">
                 <label>Price ($) *</label>
                 <input className="form-control" name="price" type="number" step="0.01" min="0" value={form.price} onChange={handleChange} required />
