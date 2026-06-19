@@ -55,8 +55,8 @@ export default function ProductsPage() {
           <option value="">All Categories</option>
           {categories.map(c => <option key={c.id} value={c.slug}>{c.name}</option>)}
         </select>
-        <input className="form-control" placeholder="Min $" type="number" value={minPrice} onChange={e => setParam('minPrice', e.target.value)} style={{ width: 90 }} />
-        <input className="form-control" placeholder="Max $" type="number" value={maxPrice} onChange={e => setParam('maxPrice', e.target.value)} style={{ width: 90 }} />
+        <input className="form-control" placeholder="Min ₹" type="number" value={minPrice} onChange={e => setParam('minPrice', e.target.value)} style={{ width: 90 }} />
+        <input className="form-control" placeholder="Max ₹" type="number" value={maxPrice} onChange={e => setParam('maxPrice', e.target.value)} style={{ width: 90 }} />
       </div>
 
       {loading ? <Spinner /> : (

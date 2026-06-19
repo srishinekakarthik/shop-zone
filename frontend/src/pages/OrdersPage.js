@@ -52,7 +52,7 @@ export default function OrdersPage() {
                   <span className={`badge ${STATUS_BADGE[order.status] || 'badge-info'}`}>
                     {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
                   </span>
-                  <p style={styles.orderTotal}>${parseFloat(order.total_amount).toFixed(2)}</p>
+                  <p style={styles.orderTotal}>₹{parseFloat(order.total_amount).toFixed(2)}</p>
                 </div>
               </div>
             </Link>

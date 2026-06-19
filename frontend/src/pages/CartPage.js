@@ -58,7 +58,7 @@ export default function CartPage() {
               />
               <div style={{ flex: 1 }}>
                 <Link to={`/products/${item.slug}`} style={styles.itemName}>{item.name}</Link>
-                <p style={styles.itemPrice}>${parseFloat(item.price).toFixed(2)} each</p>
+                <p style={styles.itemPrice}>₹{parseFloat(item.price).toFixed(2)} each</p>
               </div>
               {/* Qty stepper */}
               <div style={styles.qtyRow}>
@@ -66,7 +66,7 @@ export default function CartPage() {
                 <span style={{ padding: '0 .75rem', fontWeight: 700, minWidth: 30, textAlign: 'center' }}>{item.quantity}</span>
                 <button className="btn btn-outline btn-sm" onClick={() => handleUpdate(item.id, item.quantity + 1)} disabled={item.quantity >= item.stock}>+</button>
               </div>
-              <p style={styles.subtotal}>${(item.price * item.quantity).toFixed(2)}</p>
+              <p style={styles.subtotal}>₹{(item.price * item.quantity).toFixed(2)}</p>
               <button
                 onClick={() => handleRemove(item.id)}
                 style={{ background: 'none', border: 'none', color: '#dc2626', fontSize: '1.2rem', cursor: 'pointer', padding: '0 .5rem' }}
@@ -79,11 +79,11 @@ export default function CartPage() {
         {/* Order summary */}
         <div className="card" style={styles.summary}>
           <h3 style={{ marginBottom: '1rem', fontWeight: 700 }}>Order Summary</h3>
-          <div style={styles.summaryRow}><span>Subtotal</span><span>${cart.total.toFixed(2)}</span></div>
+          <div style={styles.summaryRow}><span>Subtotal</span><span>₹{cart.total.toFixed(2)}</span></div>
           <div style={styles.summaryRow}><span>Shipping</span><span style={{ color: '#16a34a' }}>Free</span></div>
           <hr style={{ margin: '1rem 0', borderColor: '#e2e8f0' }} />
           <div style={{ ...styles.summaryRow, fontWeight: 800, fontSize: '1.15rem' }}>
-            <span>Total</span><span style={{ color: '#2563eb' }}>${cart.total.toFixed(2)}</span>
+            <span>Total</span><span style={{ color: '#2563eb' }}>₹{cart.total.toFixed(2)}</span>
           </div>
           <button className="btn btn-primary btn-block" style={{ marginTop: '1.25rem' }} onClick={() => navigate('/checkout')}>
             Proceed to Checkout →

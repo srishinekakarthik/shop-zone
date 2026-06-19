@@ -140,7 +140,7 @@ export default function ProductDetailPage() {
           <h1 style={s.productName}>{product.name}</h1>
 
           <div style={s.priceRow}>
-            <span style={s.price}>${parseFloat(product.price).toFixed(2)}</span>
+            <span style={s.price}>₹{parseFloat(product.price).toFixed(2)}</span>
             {averageRating && (
               <span style={{ color: '#eab308', fontWeight: 700, fontSize: '1.1rem', marginLeft: '.5rem' }}>
                 ★ {averageRating} <span style={{ color: '#64748b', fontSize: '.9rem', fontWeight: 400 }}>({product.reviews.length})</span>

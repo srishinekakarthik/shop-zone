@@ -112,7 +112,7 @@ export default function AdminProducts() {
                 </div>
               )}
               <div className="form-group">
-                <label>Price ($) *</label>
+                <label>Price (₹) *</label>
                 <input className="form-control" name="price" type="number" step="0.01" min="0" value={form.price} onChange={handleChange} required />
               </div>
               <div className="form-group">
@@ -178,7 +178,7 @@ export default function AdminProducts() {
                 <td style={styles.td}><img src={p.image_url || 'https://placehold.co/50x50?text=?'} alt="" style={{ width: 48, height: 48, objectFit: 'cover', borderRadius: 6 }} /></td>
                 <td style={{ ...styles.td, fontWeight: 600 }}>{p.name}</td>
                 <td style={styles.td}>{p.category_name}</td>
-                <td style={styles.td}>${parseFloat(p.price).toFixed(2)}</td>
+                <td style={styles.td}>₹{parseFloat(p.price).toFixed(2)}</td>
                 <td style={styles.td}>{p.stock}</td>
                 <td style={styles.td}>
                   <span className={`badge ${p.is_active ? 'badge-success' : 'badge-danger'}`}>{p.is_active ? 'Active' : 'Inactive'}</span>

@@ -32,7 +32,7 @@ export default function ProductCard({ product }) {
           <p style={styles.category}>{product.category_name}</p>
           <h3 style={styles.name}>{product.name}</h3>
           <div style={styles.footer}>
-            <span style={styles.price}>${parseFloat(product.price).toFixed(2)}</span>
+            <span style={styles.price}>₹{parseFloat(product.price).toFixed(2)}</span>
             <button
               className="btn btn-primary btn-sm"
               onClick={handleAddToCart}
