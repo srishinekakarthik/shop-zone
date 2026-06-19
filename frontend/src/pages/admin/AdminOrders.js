@@ -70,7 +70,7 @@ export default function AdminOrders() {
                   <td style={{ ...styles.td, fontWeight: 700 }}>#{o.id}</td>
                   <td style={styles.td}>{o.customer}</td>
                   <td style={{ ...styles.td, color: '#64748b', fontSize: '.85rem' }}>{o.email}</td>
-                  <td style={{ ...styles.td, fontWeight: 700, color: '#2563eb' }}>₹{parseFloat(o.total_amount).toFixed(2)}</td>
+                  <td style={{ ...styles.td, fontWeight: 700, color: '#2563eb' }}>₹{parseFloat(o.total_amount)}</td>
                   <td style={styles.td}>
                     <span className={`badge ${o.payment_status === 'paid' ? 'badge-success' : 'badge-warning'}`}>{o.payment_status}</span>
                   </td>

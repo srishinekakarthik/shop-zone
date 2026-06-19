@@ -95,7 +95,7 @@ export default function CheckoutPage() {
           </div>
 
           <button className="btn btn-primary btn-block" type="submit" disabled={loading} style={{ fontSize: '1.05rem', padding: '.75rem' }}>
-            {loading ? 'Placing Order…' : `Place Order  •  ₹${cart.total.toFixed(2)}`}
+            {loading ? 'Placing Order…' : `Place Order  •  ₹${cart.total}`}
           </button>
         </form>
 
@@ -105,13 +105,13 @@ export default function CheckoutPage() {
           {cart.items.map(item => (
             <div key={item.id} style={styles.orderItem}>
               <span style={{ flex: 1 }}>{item.name} <span style={{ color: '#94a3b8' }}>×{item.quantity}</span></span>
-              <span style={{ fontWeight: 600 }}>₹{(item.price * item.quantity).toFixed(2)}</span>
+              <span style={{ fontWeight: 600 }}>₹{(item.price * item.quantity)}</span>
             </div>
           ))}
           <hr style={{ margin: '1rem 0', borderColor: '#e2e8f0' }} />
           <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 800, fontSize: '1.1rem' }}>
             <span>Total</span>
-            <span style={{ color: '#2563eb' }}>₹{cart.total.toFixed(2)}</span>
+            <span style={{ color: '#2563eb' }}>₹{cart.total}</span>
           </div>
         </div>
       </div>

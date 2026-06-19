@@ -68,15 +68,15 @@ export default function OrderDetailPage() {
               <img src={item.image_url || 'https://placehold.co/60x60?text=?'} alt={item.name} style={styles.thumb} />
               <div style={{ flex: 1 }}>
                 <p style={{ fontWeight: 600 }}>{item.name}</p>
-                <p style={{ color: '#64748b', fontSize: '.85rem' }}>Qty: {item.quantity} × ₹{parseFloat(item.unit_price).toFixed(2)}</p>
+                <p style={{ color: '#64748b', fontSize: '.85rem' }}>Qty: {item.quantity} × ₹{parseFloat(item.unit_price)}</p>
               </div>
-              <p style={{ fontWeight: 700 }}>₹{(item.quantity * item.unit_price).toFixed(2)}</p>
+              <p style={{ fontWeight: 700 }}>₹{(item.quantity * item.unit_price)}</p>
             </div>
           ))}
           <hr style={{ margin: '1rem 0', borderColor: '#e2e8f0' }} />
           <div style={{ display: 'flex', justifyContent: 'flex-end', fontWeight: 800, fontSize: '1.1rem', gap: '2rem' }}>
             <span>Total</span>
-            <span style={{ color: '#2563eb' }}>₹{parseFloat(order.total_amount).toFixed(2)}</span>
+            <span style={{ color: '#2563eb' }}>₹{parseFloat(order.total_amount)}</span>
           </div>
         </div>
 

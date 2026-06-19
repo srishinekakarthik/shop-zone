@@ -14,7 +14,7 @@ const STATUS_BADGE = { pending:'badge-warning', processing:'badge-info', shipped
 function StatCard({ icon, label, value, color }) {
   return (
     <div className="card" style={{ padding: '1.5rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
-      <div style={{ background: color + '20', borderRadius: 12, padding: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{ background: color + '20', borderRadius: 12, padding: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, width: '68px', height: '68px', boxSizing: 'border-box' }}>
         {icon}
       </div>
       <div>
@@ -51,7 +51,7 @@ export default function AdminDashboard() {
         <StatCard icon={<img src={customersSvg} alt="Customers" width="36" height="36" style={{ display: 'block' }} />} label="Customers"  value={data.totalUsers}    color="#2563eb" />
         <StatCard icon={<img src={productsSvg} alt="Products" width="36" height="36" style={{ display: 'block' }} />} label="Products"   value={data.totalProducts} color="#7c3aed" />
         <StatCard icon={<img src={cartSvg} alt="Orders" width="36" height="36" style={{ display: 'block' }} />} label="Orders"     value={data.totalOrders}   color="#059669" />
-        <StatCard icon={<img src={revenueSvg} alt="Revenue" width="36" height="36" style={{ display: 'block' }} />} label="Revenue"    value={`₹${parseFloat(data.revenue).toFixed(2)}`} color="#f59e0b" />
+        <StatCard icon={<img src={revenueSvg} alt="Revenue" width="36" height="36" style={{ display: 'block' }} />} label="Revenue"    value={`₹${parseFloat(data.revenue)}`} color="#f59e0b" />
       </div>
 
       {/* Recent orders */}
@@ -69,7 +69,7 @@ export default function AdminDashboard() {
                 <tr key={o.id} style={styles.tr}>
                   <td style={{ fontWeight: 600 }}>#{o.id}</td>
                   <td>{o.customer}</td>
-                  <td style={{ fontWeight: 700, color: '#2563eb' }}>₹{parseFloat(o.total_amount).toFixed(2)}</td>
+                  <td style={{ fontWeight: 700, color: '#2563eb' }}>₹{parseFloat(o.total_amount)}</td>
                   <td><span className={`badge ${STATUS_BADGE[o.status] || 'badge-info'}`}>{o.status}</span></td>
                   <td style={{ color: '#64748b', fontSize: '.85rem' }}>{new Date(o.created_at).toLocaleDateString()}</td>
                 </tr>
