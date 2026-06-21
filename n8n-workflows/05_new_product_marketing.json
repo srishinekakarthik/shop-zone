@@ -1,0 +1,577 @@
+{
+  "name": "ShopZone – New Product Marketing Email",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 15
+            }
+          ]
+        }
+      },
+      "id": "trigger-schedule",
+      "name": "Every 15 Minutes",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        220,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/rpc/get_unannounced_products",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={ \"batch_size\": 20 }"
+      },
+      "id": "fetch-new-products",
+      "name": "Fetch Unannounced Products",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        440,
+        300
+      ],
+      "notes": "Calls get_unannounced_products() — returns active products that have never had marketing_announced_at set."
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.length }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ]
+        }
+      },
+      "id": "check-any-new",
+      "name": "Any New Products?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        660,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "=",
+        "include": "allOtherFields"
+      },
+      "id": "split-products",
+      "name": "Split Into Products",
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        880,
+        220
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/rpc/get_category_customers_for_announcement",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"p_category_id\": {{ $json.category_id }},\n  \"p_product_id\":  {{ $json.product_id }}\n}"
+      },
+      "id": "fetch-matching-customers",
+      "name": "Fetch Matching Customers",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        1100,
+        220
+      ],
+      "notes": "Calls get_category_customers_for_announcement() — one row per customer who has a non-cancelled past order containing a product in this same category, excluding anyone already announced this product."
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.length }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ]
+        }
+      },
+      "id": "check-any-customers",
+      "name": "Any Matching Customers?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        1320,
+        220
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Carry the product fields down alongside each customer row, since\n// Split Into Customers below loses access to the parent product item.\nconst product = $('Split Into Products').item.json;\nconst customers = $json;\n\nreturn customers.map(c => ({\n  product_id:    product.product_id,\n  product_name:  product.product_name,\n  slug:          product.slug,\n  description:   product.description,\n  price:         product.price,\n  image_url:     product.image_url,\n  category_name: product.category_name,\n  user_id:       c.user_id,\n  email:         c.email,\n  name:          c.name,\n}));"
+      },
+      "id": "merge-product-into-customers",
+      "name": "Attach Product Info to Each Customer",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1540,
+        140
+      ]
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "=",
+        "include": "allOtherFields"
+      },
+      "id": "split-customers",
+      "name": "Split Into Customers",
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        1760,
+        140
+      ]
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $json.email }}",
+        "subject": "=New in {{ $json.category_name }}: {{ $json.product_name }} — just for you, {{ $json.name }}",
+        "emailType": "html",
+        "message": "=<div style=\"font-family:Arial,sans-serif;max-width:560px;margin:auto;\">\n<div style=\"background:linear-gradient(135deg,#7c3aed,#a78bfa);color:white;padding:24px;border-radius:12px 12px 0 0;text-align:center;\">\n  <p style=\"margin:0;opacity:0.85;font-size:.8rem;text-transform:uppercase;letter-spacing:.06em;\">Just Added to ShopZone</p>\n  <h1 style=\"margin:6px 0 0;font-size:1.4rem;\">{{ $json.product_name }}</h1>\n</div>\n<div style=\"background:#f8fafc;padding:24px;border-radius:0 0 12px 12px;\">\n  <p style=\"color:#334155;font-size:.95rem;\">Hi {{ $json.name }},</p>\n  <p style=\"color:#334155;font-size:.95rem;line-height:1.6;\">\n    Since you've shopped <strong>{{ $json.category_name }}</strong> with us before, we thought you'd want a first look at our newest arrival.\n  </p>\n  {{ $json.image_url ? `<img src=\"${$json.image_url}\" alt=\"${$json.product_name}\" style=\"width:100%;max-height:260px;object-fit:cover;border-radius:10px;margin:16px 0;\" />` : '' }}\n  <h2 style=\"color:#1e293b;font-size:1.15rem;margin:12px 0 4px;\">{{ $json.product_name }}</h2>\n  <p style=\"color:#64748b;font-size:.9rem;line-height:1.5;margin:0 0 10px;\">{{ ($json.description || '').toString().slice(0, 180) }}{{ ($json.description || '').length > 180 ? '…' : '' }}</p>\n  <p style=\"font-size:1.3rem;font-weight:800;color:#7c3aed;margin:0 0 18px;\">₹{{ $json.price }}</p>\n  <a href=\"{{ $env.CLIENT_ORIGIN }}/products/{{ $json.slug }}\" style=\"display:inline-block;background:#7c3aed;color:white;text-decoration:none;font-weight:700;padding:.7rem 1.5rem;border-radius:8px;font-size:.9rem;\">\n    View Product\n  </a>\n  <p style=\"color:#94a3b8;font-size:.75rem;margin-top:24px;\">\n    You're receiving this because you previously purchased from the {{ $json.category_name }} category on ShopZone.<br/>\n    <a href=\"{{ $json.unsubscribe_url }}\" style=\"color:#94a3b8;text-decoration:underline;\">Unsubscribe from these emails</a>\n  </p>\n</div>\n</div>",
+        "options": {}
+      },
+      "id": "send-marketing-email",
+      "name": "Send Marketing Email",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        1980,
+        140
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/rpc/log_announcement_email",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"p_product_id\": {{ $('Split Into Customers').item.json.product_id }},\n  \"p_user_id\":    \"{{ $('Split Into Customers').item.json.user_id }}\",\n  \"p_email\":      \"{{ $('Split Into Customers').item.json.email }}\"\n}"
+      },
+      "id": "log-sent-email",
+      "name": "Log Sent Email",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        2200,
+        140
+      ],
+      "notes": "Writes to product_announcement_emails so a manual re-run of this workflow never double-emails the same customer for the same product."
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/rpc/mark_product_announced",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={ \"p_product_id\": {{ $('Split Into Products').item.json.product_id }} }"
+      },
+      "id": "mark-announced",
+      "name": "Mark Product as Announced",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        1540,
+        380
+      ],
+      "notes": "Zero-customer path: runs once per product with no matching customers, so it's never retried forever. Sourced product_id from 'Split Into Products' directly since 'Log No Matching Customers' output has no product fields."
+    },
+    {
+      "parameters": {
+        "jsCode": "const allItems = $input.all();\nconsole.log('No matching customers for product:', JSON.stringify(allItems.map(i => i.json)));\nreturn { skipped: true, timestamp: new Date().toISOString() };"
+      },
+      "id": "log-no-customers",
+      "name": "Log No Matching Customers",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1540,
+        280
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "console.log('No new unannounced products this run:', new Date().toISOString());\nreturn { skipped: true };"
+      },
+      "id": "log-no-products",
+      "name": "Log No New Products",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        880,
+        420
+      ]
+    },
+    {
+      "parameters": {
+        "aggregate": "aggregateAllItemData",
+        "destinationFieldName": "sentEmails"
+      },
+      "id": "aggregate-sent-emails",
+      "name": "Aggregate Sent Emails (Per Product)",
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        2420,
+        140
+      ],
+      "notes": "Collapses the per-customer email loop back to ONE item per product, so the next node marks the product announced exactly once -- not once per customer."
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/rpc/mark_product_announced",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={ \"p_product_id\": {{ $('Split Into Products').item.json.product_id }} }"
+      },
+      "id": "mark-announced-after-emails",
+      "name": "Mark Product as Announced (After Emails Sent)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        2640,
+        140
+      ],
+      "notes": "Runs exactly once per product, after every matching customer has been emailed and logged."
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.SHOPZONE_API_URL }}/users/unsubscribe-link/{{ $json.user_id }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-ingest-key",
+              "value": "={{ $env.SHOPZONE_INGEST_KEY }}"
+            }
+          ]
+        }
+      },
+      "id": "fetch-unsubscribe-link",
+      "name": "Fetch Unsubscribe Link",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        1980,
+        140
+      ],
+      "notes": "Calls GET /api/users/unsubscribe-link/:userId on the backend, protected by the same x-ingest-key header pattern as /api/ingest. Returns a signed, no-login-required unsubscribe URL for this specific customer."
+    },
+    {
+      "parameters": {
+        "jsCode": "const customer = $('Split Into Customers').item.json;\nconst link = $json.url;\n\nreturn { ...customer, unsubscribe_url: link };"
+      },
+      "id": "attach-unsubscribe-link",
+      "name": "Attach Unsubscribe Link",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2200,
+        140
+      ]
+    }
+  ],
+  "connections": {
+    "Every 15 Minutes": {
+      "main": [
+        [
+          {
+            "node": "Fetch Unannounced Products",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Unannounced Products": {
+      "main": [
+        [
+          {
+            "node": "Any New Products?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Any New Products?": {
+      "main": [
+        [
+          {
+            "node": "Split Into Products",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Log No New Products",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Into Products": {
+      "main": [
+        [
+          {
+            "node": "Fetch Matching Customers",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Matching Customers": {
+      "main": [
+        [
+          {
+            "node": "Any Matching Customers?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Any Matching Customers?": {
+      "main": [
+        [
+          {
+            "node": "Attach Product Info to Each Customer",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Log No Matching Customers",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Mark Product as Announced",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Attach Product Info to Each Customer": {
+      "main": [
+        [
+          {
+            "node": "Split Into Customers",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Into Customers": {
+      "main": [
+        [
+          {
+            "node": "Fetch Unsubscribe Link",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Marketing Email": {
+      "main": [
+        [
+          {
+            "node": "Log Sent Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Sent Email": {
+      "main": [
+        [
+          {
+            "node": "Aggregate Sent Emails (Per Product)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate Sent Emails (Per Product)": {
+      "main": [
+        [
+          {
+            "node": "Mark Product as Announced (After Emails Sent)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Unsubscribe Link": {
+      "main": [
+        [
+          {
+            "node": "Attach Unsubscribe Link",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Attach Unsubscribe Link": {
+      "main": [
+        [
+          {
+            "node": "Send Marketing Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "saveExecutionProgress": true
+  },
+  "tags": [
+    "shopzone",
+    "marketing",
+    "email"
+  ],
+  "_meta": {
+    "instanceId": "shopzone-new-product-marketing-v1"
+  }
+}

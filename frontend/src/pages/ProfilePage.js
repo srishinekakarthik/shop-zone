@@ -6,22 +6,22 @@ import { toast } from 'react-toastify';
 
 export default function ProfilePage() {
   const { user: authUser } = useAuth();
-  const [profile, setProfile]   = useState({ name: '', email: '', phone: '', avatar_url: '' });
-  const [pwForm,  setPwForm]    = useState({ newPassword: '', confirm: '' });
-  const [tab,     setTab]       = useState('profile');
-  const [saving,  setSaving]    = useState(false);
+  const [profile, setProfile] = useState({ name: '', email: '', phone: '', avatar_url: '', marketing_opt_out: false });
+  const [pwForm, setPwForm] = useState({ newPassword: '', confirm: '' });
+  const [tab, setTab] = useState('profile');
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     userAPI.getProfile().then(r => {
       const u = r.data.user;
-      setProfile({ name: u.name || '', email: u.email || '', phone: u.phone || '', avatar_url: u.avatar_url || '' });
+      setProfile({ name: u.name || '', email: u.email || '', phone: u.phone || '', avatar_url: u.avatar_url || '', marketing_opt_out: !!u.marketing_opt_out });
     });
   }, []);
 
   const handleProfileSave = async e => {
     e.preventDefault(); setSaving(true);
     try {
-      await userAPI.updateProfile({ name: profile.name, phone: profile.phone, avatar_url: profile.avatar_url });
+      await userAPI.updateProfile({ name: profile.name, phone: profile.phone, avatar_url: profile.avatar_url, marketing_opt_out: profile.marketing_opt_out });
       toast.success('Profile updated!');
     } catch { toast.error('Update failed'); }
     finally { setSaving(false); }
@@ -60,7 +60,7 @@ export default function ProfilePage() {
       <div style={styles.tabs}>
         {['profile', 'password'].map(t => (
           <button key={t} onClick={() => setTab(t)} style={{ ...styles.tab, ...(tab === t ? styles.tabActive : {}) }}>
-            {t === 'profile' ? ' Profile Info' : ' Change Password'}
+            {t === 'profile' ? '👤 Profile Info' : '🔒 Change Password'}
           </button>
         ))}
       </div>
@@ -83,6 +83,22 @@ export default function ProfilePage() {
             <div className="form-group">
               <label>Avatar URL</label>
               <input className="form-control" value={profile.avatar_url} onChange={e => setProfile(p => ({ ...p, avatar_url: e.target.value }))} placeholder="https://…" />
+            </div>
+            <div className="form-group" style={{ display: 'flex', alignItems: 'flex-start', gap: '.6rem', background: '#f8fafc', padding: '.85rem 1rem', borderRadius: 8 }}>
+              <input
+                type="checkbox"
+                id="marketing-opt-out"
+                checked={profile.marketing_opt_out}
+                onChange={e => setProfile(p => ({ ...p, marketing_opt_out: e.target.checked }))}
+                style={{ marginTop: 3 }}
+              />
+              <label htmlFor="marketing-opt-out" style={{ margin: 0, fontWeight: 400, cursor: 'pointer' }}>
+                <span style={{ fontWeight: 600 }}>Don't send me marketing emails</span>
+                <br />
+                <span style={{ color: '#64748b', fontSize: '.85rem' }}>
+                  You'll still receive order confirmations and account emails — this only affects new-product announcements.
+                </span>
+              </label>
             </div>
             <button className="btn btn-primary" type="submit" disabled={saving}>{saving ? 'Saving…' : 'Save Changes'}</button>
           </form>
@@ -112,10 +128,10 @@ export default function ProfilePage() {
 }
 
 const styles = {
-  title:     { fontSize: '1.6rem', fontWeight: 700, marginBottom: '1.25rem' },
-  banner:    { display: 'flex', alignItems: 'center', gap: '1.25rem', padding: '1.5rem', marginBottom: '1.5rem' },
-  avatar:    { width: 64, height: 64, borderRadius: '50%', background: '#2563eb', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.8rem', fontWeight: 800, flexShrink: 0 },
-  tabs:      { display: 'flex', gap: '.5rem', marginBottom: '1.25rem' },
-  tab:       { padding: '.55rem 1.25rem', borderRadius: 8, border: '1.5px solid #e2e8f0', background: '#fff', cursor: 'pointer', fontWeight: 600, fontSize: '.9rem', color: '#64748b' },
+  title: { fontSize: '1.6rem', fontWeight: 700, marginBottom: '1.25rem' },
+  banner: { display: 'flex', alignItems: 'center', gap: '1.25rem', padding: '1.5rem', marginBottom: '1.5rem' },
+  avatar: { width: 64, height: 64, borderRadius: '50%', background: '#2563eb', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.8rem', fontWeight: 800, flexShrink: 0 },
+  tabs: { display: 'flex', gap: '.5rem', marginBottom: '1.25rem' },
+  tab: { padding: '.55rem 1.25rem', borderRadius: 8, border: '1.5px solid #e2e8f0', background: '#fff', cursor: 'pointer', fontWeight: 600, fontSize: '.9rem', color: '#64748b' },
   tabActive: { background: '#2563eb', color: '#fff', borderColor: '#2563eb' },
 };

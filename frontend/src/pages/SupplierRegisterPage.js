@@ -5,17 +5,17 @@
 // database/migrations_marketplace.sql) reads to create both a profiles
 // row with role='supplier' AND a suppliers row with status='pending'.
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'react-toastify';
 
 export default function SupplierRegisterPage() {
   const { signUp } = useAuth();
+  const navigate = useNavigate();
 
   const [form, setForm] = useState({ name: '', businessName: '', email: '', password: '', confirm: '' });
   const [loading, setLoad] = useState(false);
   const [error, setError] = useState('');
-  const [emailSent, setEmailSent] = useState(false);
 
   const handleChange = e => setForm(f => ({ ...f, [e.target.name]: e.target.value }));
 
@@ -31,33 +31,12 @@ export default function SupplierRegisterPage() {
         role: 'supplier',
         business_name: form.businessName.trim(),
       });
-      setEmailSent(true);
-      toast.success('Vendor account created! Check your email to confirm.');
+      toast.success('Vendor account created successfully!');
+      navigate('/supplier');
     } catch (err) {
       setError(err.message || 'Registration failed');
     } finally { setLoad(false); }
   };
-
-  if (emailSent) {
-    return (
-      <div style={s.page}>
-        <div style={s.card}>
-          <div style={{ textAlign: 'center', padding: '1rem 0' }}>
-            <div style={{ fontSize: '2.5rem', marginBottom: 8 }}></div>
-            <h2 style={{ fontWeight: 800, color: '#1e293b', marginBottom: 8 }}>Confirm your email</h2>
-            <p style={{ color: '#64748b', lineHeight: 1.6 }}>
-              We sent a confirmation link to <strong>{form.email}</strong>. After confirming,
-              sign in — your vendor account will show as <strong>pending approval</strong> until
-              a ShopZone admin reviews it. You'll be notified once approved.
-            </p>
-            <Link to="/login" style={{ ...s.submitBtn, display: 'inline-block', marginTop: '1.5rem', textDecoration: 'none', textAlign: 'center' }}>
-              Go to Sign In
-            </Link>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div style={s.page}>

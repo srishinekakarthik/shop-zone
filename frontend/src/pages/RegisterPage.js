@@ -1,16 +1,16 @@
 // src/pages/RegisterPage.js
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'react-toastify';
 
 export default function RegisterPage() {
   const { signUp, signInWithGoogle } = useAuth();
+  const navigate = useNavigate();
 
   const [form,   setForm]  = useState({ name: '', email: '', password: '', confirm: '' });
   const [loading,setLoad]  = useState(false);
   const [error,  setError] = useState('');
-  const [emailSent, setEmailSent] = useState(false);
 
   const handleChange = e => setForm(f => ({ ...f, [e.target.name]: e.target.value }));
 
@@ -22,8 +22,8 @@ export default function RegisterPage() {
 
     try {
       await signUp(form.email, form.password, form.name);
-      setEmailSent(true);
-      toast.success('Account created! Check your email to confirm.');
+      toast.success('Account created successfully!');
+      navigate('/');
     } catch (err) {
       setError(err.message || 'Registration failed');
     } finally { setLoad(false); }
@@ -33,29 +33,11 @@ export default function RegisterPage() {
     setError('');
     try {
       await signInWithGoogle();
+      // AuthContext will handle redirect/state update via OAuth callback
     } catch (err) {
       setError(err.message || 'Google sign-up failed');
     }
   };
-
-  if (emailSent) {
-    return (
-      <div style={s.page}>
-        <div style={s.card}>
-          <div style={{ textAlign: 'center', padding: '1rem 0' }}>
-            <h2 style={{ fontWeight: 800, color: '#1e293b', marginBottom: 8 }}>Confirm your email</h2>
-            <p style={{ color: '#64748b', lineHeight: 1.6 }}>
-              We sent a confirmation link to <strong>{form.email}</strong>.
-              Click the link in the email to activate your account, then sign in.
-            </p>
-            <Link to="/login" style={{ ...s.submitBtn, display: 'inline-block', marginTop: '1.5rem', textDecoration: 'none', textAlign: 'center' }}>
-              Go to Sign In
-            </Link>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div style={s.page}>
