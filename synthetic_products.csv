@@ -1,0 +1,6 @@
+name,category_slug,description,price,stock,reorder_threshold,image_url
+Wireless Headphones,electronics,High quality noise-canceling headphones,1999,50,5,https://images.unsplash.com/photo-1505740420928-5e560c06d30e
+Smart Watch Pro,electronics,Fitness tracking and notifications on your wrist,2999,30,5,https://images.unsplash.com/photo-1523275335684-37898b6baf30
+Yoga Mat,sports,Non-slip extra thick exercise mat,899,100,10,https://images.unsplash.com/photo-1592432678016-e910b452f9a2
+Organic Cotton T-Shirt,clothing,Comfortable and sustainable daily wear,499,200,20,https://images.unsplash.com/photo-1521572163474-6864f9cf17ab
+Stainless Steel Water Bottle,home-garden,Keeps drinks cold for 24 hours,699,150,15,https://images.unsplash.com/photo-1602143407151-7111542de6e8

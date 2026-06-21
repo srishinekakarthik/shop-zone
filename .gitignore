@@ -1,15 +1,7 @@
-# Environment files
-.env
-backend/.env
-frontend/.env
-
-# Node modules
 node_modules/
-
-# Logs
-logs
-*.log
-
-# OS files
+.env
 .DS_Store
-Thumbs.db
+dist/
+build/
+coverage/
+*.log

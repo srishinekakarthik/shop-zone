@@ -6,7 +6,9 @@
 const supabase = require('../config/db');
 
 // ── GET /api/auth/me ──────────────────────────────────────────
-// Returns the full profile for the authenticated user.
+// Returns the full profile for the authenticated user. If the user
+// is a supplier, also attaches their approval status so the frontend
+// can route them to the pending screen or the supplier dashboard.
 exports.getMe = async (req, res, next) => {
   try {
     const { data: profile, error } = await supabase
@@ -17,6 +19,16 @@ exports.getMe = async (req, res, next) => {
 
     if (error || !profile) return res.status(404).json({ message: 'Profile not found' });
 
+    let supplier = null;
+    if (profile.role === 'supplier') {
+      const { data: supplierRow } = await supabase
+        .from('suppliers')
+        .select('status, business_name, rejected_reason')
+        .eq('id', req.user.id)
+        .single();
+      supplier = supplierRow || null;
+    }
+
     res.json({
       user: {
         id:         profile.id,
@@ -26,6 +38,9 @@ exports.getMe = async (req, res, next) => {
         avatar_url: profile.avatar_url,
         phone:      profile.phone,
         created_at: profile.created_at,
+        supplierStatus:       supplier?.status,
+        supplierBusinessName: supplier?.business_name,
+        supplierRejectedReason: supplier?.rejected_reason,
       },
     });
   } catch (err) { next(err); }

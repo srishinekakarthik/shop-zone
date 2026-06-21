@@ -49,4 +49,51 @@ const adminOnly = (req, res, next) => {
   next();
 };
 
-module.exports = { protect, adminOnly };
+/**
+ * supplierOnly – must come AFTER protect middleware.
+ * Allows access to suppliers regardless of approval status (e.g. so a
+ * pending supplier can still view their "awaiting approval" screen).
+ */
+const supplierOnly = (req, res, next) => {
+  if (req.user?.role !== 'supplier') {
+    return res.status(403).json({ message: 'Supplier access required' });
+  }
+  next();
+};
+
+/**
+ * supplierApprovedOnly – must come AFTER protect middleware.
+ * This is the gate that actually matters: a supplier cannot add
+ * products, view orders, or manage inventory until an admin has
+ * approved their account. We look this up fresh on every request
+ * (rather than trusting a JWT claim) so a same-day admin approval
+ * or rejection takes effect immediately without forcing a re-login.
+ */
+const supplierApprovedOnly = async (req, res, next) => {
+  if (req.user?.role !== 'supplier') {
+    return res.status(403).json({ message: 'Supplier access required' });
+  }
+
+  const { data: supplier, error } = await supabase
+    .from('suppliers')
+    .select('status')
+    .eq('id', req.user.id)
+    .single();
+
+  if (error || !supplier) {
+    return res.status(403).json({ message: 'Supplier profile not found' });
+  }
+
+  if (supplier.status !== 'approved') {
+    return res.status(403).json({
+      message: supplier.status === 'pending'
+        ? 'Your supplier account is pending admin approval'
+        : 'Your supplier application was not approved',
+      status: supplier.status,
+    });
+  }
+
+  next();
+};
+
+module.exports = { protect, adminOnly, supplierOnly, supplierApprovedOnly };

@@ -143,7 +143,7 @@ export default function ProductDetailPage() {
             <span style={s.price}>₹{parseFloat(product.price)}</span>
             {averageRating && (
               <span style={{ color: '#eab308', fontWeight: 700, fontSize: '1.1rem', marginLeft: '.5rem' }}>
-                ★ {averageRating} <span style={{ color: '#64748b', fontSize: '.9rem', fontWeight: 400 }}>({product.reviews.length})</span>
+                 {averageRating} <span style={{ color: '#64748b', fontSize: '.9rem', fontWeight: 400 }}>({product.reviews.length})</span>
               </span>
             )}
             {inStock ? (
@@ -234,7 +234,7 @@ export default function ProductDetailPage() {
                     <span style={s.reviewDate}>{new Date(review.created_at).toLocaleDateString()}</span>
                   </div>
                   <div style={{ marginBottom: '.5rem' }}>
-                    <span style={s.reviewStars}>{'★'.repeat(review.rating)}{'☆'.repeat(5 - review.rating)}</span>
+                    <span style={s.reviewStars}>{''.repeat(review.rating)}{''.repeat(5 - review.rating)}</span>
                   </div>
                   <h4 style={s.reviewTitleDisplay}>{review.title}</h4>
                   <p style={s.reviewBodyDisplay}>{review.body}</p>

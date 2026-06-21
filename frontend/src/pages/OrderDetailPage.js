@@ -46,7 +46,7 @@ export default function OrderDetailPage() {
               <React.Fragment key={step}>
                 <div style={{ textAlign: 'center', flex: 1 }}>
                   <div style={{ ...styles.dot, background: i <= stepIdx ? '#2563eb' : '#e2e8f0', color: i <= stepIdx ? '#fff' : '#94a3b8' }}>
-                    {i < stepIdx ? '✓' : i + 1}
+                    {i < stepIdx ? '' : i + 1}
                   </div>
                   <p style={{ fontSize: '.78rem', marginTop: '.4rem', color: i <= stepIdx ? '#2563eb' : '#94a3b8', fontWeight: i === stepIdx ? 700 : 400, textTransform: 'capitalize' }}>{step}</p>
                 </div>

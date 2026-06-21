@@ -16,7 +16,7 @@ ingestRouter.post('/', async (req, res) => {
   }
 
   try {
-    console.log('🔄 Ingest triggered via API');
+    console.log(' Ingest triggered via API');
     const result = await runIngest();
     res.json({ success: true, ...result });
   } catch (err) {

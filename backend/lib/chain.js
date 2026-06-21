@@ -21,7 +21,7 @@ const supabase = createClient(
 // If migrating from OpenAI (1536-dim), re-run ingest after updating
 // migrations_vector.sql to use VECTOR(768) instead of VECTOR(1536).
 const embeddings = new GoogleGenerativeAIEmbeddings({
-  model: 'gemini-embedding-2',
+  model: 'text-embedding-004',
   apiKey: process.env.GOOGLE_API_KEY,
 });
 

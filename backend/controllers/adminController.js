@@ -2,6 +2,8 @@
 const supabase = require('../config/db');
 
 // ── GET /api/admin/dashboard ───────────────────────────────────
+// "Business Overview" tier of the redesigned admin dashboard:
+// revenue, orders, customers, and suppliers at a glance.
 exports.getDashboard = async (_req, res, next) => {
   try {
     const [
@@ -10,6 +12,7 @@ exports.getDashboard = async (_req, res, next) => {
       { count: totalOrders },
       { data: revenueData },
       { data: recentOrdersData },
+      { data: supplierCounts },
     ] = await Promise.all([
       supabase.from('profiles').select('id', { count: 'exact', head: true }).eq('role', 'customer'),
       supabase.from('products').select('id', { count: 'exact', head: true }).eq('is_active', true),
@@ -20,6 +23,7 @@ exports.getDashboard = async (_req, res, next) => {
         .select('id, status, total_amount, created_at, user_id')
         .order('created_at', { ascending: false })
         .limit(10),
+      supabase.from('v_supplier_counts').select('*').single(),
     ]);
 
     // Sum revenue client-side
@@ -47,6 +51,12 @@ exports.getDashboard = async (_req, res, next) => {
       totalOrders:   totalOrders  || 0,
       revenue:       parseFloat(revenue.toFixed(2)),
       recentOrders:  shaped,
+      suppliers: {
+        pending:  supplierCounts?.pending_count  || 0,
+        approved: supplierCounts?.approved_count || 0,
+        rejected: supplierCounts?.rejected_count || 0,
+        total:    supplierCounts?.total_count    || 0,
+      },
     });
   } catch (err) { next(err); }
 };
@@ -118,5 +128,97 @@ exports.getAllUsers = async (_req, res, next) => {
 
     const merged = (users || []).map(u => ({ ...u, email: emailMap[u.id] || '' }));
     res.json({ users: merged });
+  } catch (err) { next(err); }
+};
+
+// ── GET /api/admin/suppliers ────────────────────────────────────
+// ?status=pending|approved|rejected (omit for all)
+exports.getSuppliers = async (req, res, next) => {
+  try {
+    let query = supabase
+      .from('suppliers')
+      .select('id, business_name, business_email, phone, description, status, reorder_threshold, created_at, approved_at, rejected_reason')
+      .order('created_at', { ascending: false });
+
+    if (req.query.status) query = query.eq('status', req.query.status);
+
+    const { data, error } = await query;
+    if (error) throw error;
+    res.json({ suppliers: data || [] });
+  } catch (err) { next(err); }
+};
+
+// ── PATCH /api/admin/suppliers/:id/approve ──────────────────────
+exports.approveSupplier = async (req, res, next) => {
+  try {
+    const { error } = await supabase
+      .from('suppliers')
+      .update({ status: 'approved', approved_by: req.user.id, approved_at: new Date().toISOString(), rejected_reason: null })
+      .eq('id', req.params.id);
+
+    if (error) throw error;
+    res.json({ message: 'Supplier approved' });
+  } catch (err) { next(err); }
+};
+
+// ── PATCH /api/admin/suppliers/:id/reject ───────────────────────
+exports.rejectSupplier = async (req, res, next) => {
+  try {
+    const { reason } = req.body;
+    const { error } = await supabase
+      .from('suppliers')
+      .update({ status: 'rejected', rejected_reason: reason || 'Application did not meet marketplace requirements' })
+      .eq('id', req.params.id);
+
+    if (error) throw error;
+    res.json({ message: 'Supplier application rejected' });
+  } catch (err) { next(err); }
+};
+
+// ── GET /api/admin/intelligence ──────────────────────────────────
+// Powers the redesigned "Customer Intelligence" + "AI Insights"
+// sections of the admin dashboard, platform-wide (all suppliers'
+// products combined). All data here is produced by the n8n sentiment
+// workflow (sentiment, urgency, complaint_category columns).
+exports.getIntelligence = async (_req, res, next) => {
+  try {
+    const [
+      { data: sentimentRows },
+      { data: complaintCategories },
+      { data: riskProducts },
+      { data: latestSnapshot },
+      { data: topProductsRaw },
+      { data: worstProductsRaw },
+    ] = await Promise.all([
+      supabase.from('product_reviews').select('sentiment, sentiment_score, urgency').not('analyzed_at', 'is', null),
+      supabase.from('v_complaint_categories').select('*'),
+      supabase.from('v_risk_products').select('*'),
+      supabase.from('analytics_snapshots').select('metrics, snapshot_date')
+        .eq('period', 'daily').order('snapshot_date', { ascending: false }).limit(1),
+      supabase.from('v_sentiment_summary').select('*').gte('total_reviews', 1)
+        .order('avg_sentiment_score', { ascending: false }).limit(5),
+      supabase.from('v_sentiment_summary').select('*').gte('total_reviews', 1)
+        .order('avg_sentiment_score', { ascending: true }).limit(5),
+    ]);
+
+    const rows = sentimentRows || [];
+    const totalReviews = rows.length;
+    const positive = rows.filter(r => r.sentiment === 'positive').length;
+    const neutral  = rows.filter(r => r.sentiment === 'neutral').length;
+    const negative = rows.filter(r => r.sentiment === 'negative').length;
+    const avgScore = totalReviews > 0
+      ? rows.reduce((s, r) => s + (parseFloat(r.sentiment_score) || 0), 0) / totalReviews
+      : 0;
+    const highUrgency = rows.filter(r => r.urgency === 'high').length;
+
+    res.json({
+      sentimentScore: { overallScore: parseFloat(avgScore.toFixed(3)), positive, neutral, negative, totalReviews, highUrgency },
+      reviewVolume: totalReviews,
+      complaintCategories: complaintCategories || [],
+      topPraises: topProductsRaw || [],
+      topIssues:  worstProductsRaw || [],
+      riskProducts: riskProducts || [],
+      latestSnapshot: latestSnapshot?.[0]?.metrics || null,
+    });
   } catch (err) { next(err); }
 };

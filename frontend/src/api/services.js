@@ -57,4 +57,29 @@ export const adminAPI = {
   getOrders:         (params)    => api.get('/admin/orders', { params }),
   updateOrderStatus: (id, status)=> api.patch(`/admin/orders/${id}/status`, { status }),
   getUsers:          ()          => api.get('/admin/users'),
+  getIntelligence:   ()          => api.get('/admin/intelligence'),
+  getSuppliers:      (status)    => api.get('/admin/suppliers', { params: status ? { status } : {} }),
+  approveSupplier:   (id)        => api.patch(`/admin/suppliers/${id}/approve`),
+  rejectSupplier:    (id, reason)=> api.patch(`/admin/suppliers/${id}/reject`, { reason }),
+};
+
+// ── Supplier (vendor dashboard) ─────────────────────────────────
+export const supplierAPI = {
+  getMyProfile:      ()           => api.get('/supplier/me'),
+  updateMyProfile:   (data)       => api.put('/supplier/me', data),
+  getDashboard:      ()           => api.get('/supplier/dashboard'),
+  getIntelligence:   ()           => api.get('/supplier/intelligence'),
+  getProducts:       ()           => api.get('/supplier/products'),
+  createProduct:     (data)       => api.post('/supplier/products', data),
+  updateProduct:     (id, data)   => api.put(`/supplier/products/${id}`, data),
+  removeProduct:     (id)         => api.delete(`/supplier/products/${id}`),
+  getOrders:         ()           => api.get('/supplier/orders'),
+  getRestockAlerts:  ()           => api.get('/supplier/restock-alerts'),
+  bulkImport:        (products)   => api.post('/supplier/bulk-import', { products }),
+  getBulkImportJobs: ()           => api.get('/supplier/bulk-import'),
+};
+
+// ── AI Business Assistant (admin + supplier, Gemini LangGraph) ──
+export const assistantAPI = {
+  ask: (question, threadId) => api.post('/assistant', { question, threadId }),
 };

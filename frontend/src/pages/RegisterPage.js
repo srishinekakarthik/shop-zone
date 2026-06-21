@@ -76,7 +76,11 @@ export default function RegisterPage() {
           Sign up with Google
         </button>
 
-        <div style={s.divider}><span style={{ background: '#fff', padding: '0 0.75rem', color: '#94a3b8', fontSize: '.85rem' }}>or sign up with email</span></div>
+        <div style={s.divider}>
+          <div style={{ flex: 1, borderTop: '1.5px solid #e2e8f0' }}></div>
+          <span style={{ padding: '0 0.75rem', color: '#94a3b8', fontSize: '.85rem' }}>or sign up with email</span>
+          <div style={{ flex: 1, borderTop: '1.5px solid #e2e8f0' }}></div>
+        </div>
 
         {error && <p style={s.error}>{error}</p>}
 
@@ -179,10 +183,7 @@ const s = {
   divider: {
     display: 'flex',
     alignItems: 'center',
-    textAlign: 'center',
     marginBottom: '1.25rem',
-    borderTop: '1.5px solid #e2e8f0',
-    lineHeight: 0,
   },
   group: { marginBottom: '1rem' },
   label: { display: 'block', marginBottom: 6, fontSize: '.875rem', fontWeight: 600, color: '#374151' },

@@ -25,7 +25,7 @@ const splitter = new RecursiveCharacterTextSplitter({
 
 // ── Ingest product catalogue from Supabase ───────────────────
 async function ingestProducts() {
-  console.log('📦 Fetching products from Supabase...');
+  console.log(' Fetching products from Supabase...');
 
   const { data: products, error } = await supabase
     .from('products')
@@ -140,7 +140,7 @@ function getPolicyDocuments() {
 
 // ── Main Ingest Function ──────────────────────────────────────
 async function runIngest() {
-  console.log('🚀 Starting ShopZone knowledge base ingestion...');
+  console.log(' Starting ShopZone knowledge base ingestion...');
 
   const productChunks = await ingestProducts();
   const faqDocs       = getFAQDocuments();
@@ -148,7 +148,7 @@ async function runIngest() {
 
   const allDocs = [...productChunks, ...faqDocs, ...policyDocs];
 
-  console.log(`📚 Ingesting ${allDocs.length} total documents...`);
+  console.log(` Ingesting ${allDocs.length} total documents...`);
 
   await SupabaseVectorStore.fromDocuments(allDocs, embeddings, {
     client:    supabase,
@@ -156,7 +156,7 @@ async function runIngest() {
     queryName: 'match_documents',
   });
 
-  console.log('✅ Ingestion complete!');
+  console.log(' Ingestion complete!');
   return { ingested: allDocs.length };
 }
 

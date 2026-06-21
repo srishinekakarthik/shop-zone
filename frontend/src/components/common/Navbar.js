@@ -38,6 +38,17 @@ export default function Navbar() {
           {user?.role === 'admin' && (
             <li><Link to="/admin" style={{ ...styles.link, color: '#f59e0b' }}>Admin</Link></li>
           )}
+          {user?.role === 'supplier' && (
+            <li>
+              <Link to="/supplier" style={{ ...styles.link, color: '#a78bfa' }}>
+                Vendor Dashboard
+                {user.supplierStatus === 'pending' && <span style={styles.pendingDot} title="Pending approval" />}
+              </Link>
+            </li>
+          )}
+          {!user && (
+            <li><Link to="/sell" style={{ ...styles.link, color: '#a78bfa' }}>Sell on ShopZone</Link></li>
+          )}
         </ul>
 
         {/* Right side */}
@@ -54,6 +65,9 @@ export default function Navbar() {
                   <Link to="/orders" style={styles.ddItem} onClick={() => setOpen(false)}>My Orders</Link>
                   {user.role === 'admin' && (
                     <Link to="/admin" style={styles.ddItem} onClick={() => setOpen(false)}>Admin Panel</Link>
+                  )}
+                  {user.role === 'supplier' && (
+                    <Link to="/supplier" style={styles.ddItem} onClick={() => setOpen(false)}>Vendor Dashboard</Link>
                   )}
                   <button onClick={handleLogout} style={{ ...styles.ddItem, color: '#dc2626', background: 'none', border: 'none', width: '100%', textAlign: 'left' }}>
                     Logout
@@ -81,6 +95,7 @@ const styles = {
   link: { color: '#cbd5e1', fontSize: '.95rem', transition: 'color .15s' },
   right: { display: 'flex', alignItems: 'center', gap: '1.25rem', flexShrink: 0 },
   textBadge: { background: '#ef4444', color: '#fff', borderRadius: '12px', padding: '0 6px', fontSize: '.7rem', fontWeight: 700, lineHeight: '18px' },
+  pendingDot: { display: 'inline-block', width: 7, height: 7, borderRadius: '50%', background: '#f59e0b', marginLeft: 6 },
   userMenu: { position: 'relative' },
   avatarBtn: { background: '#2563eb', color: '#fff', border: 'none', borderRadius: '6px', padding: '.35rem .75rem', cursor: 'pointer', fontWeight: 700 },
   dropdown: { position: 'absolute', right: 0, top: '110%', background: '#fff', border: '1px solid #e2e8f0', borderRadius: '8px', boxShadow: '0 4px 16px rgba(0,0,0,.12)', minWidth: '160px', overflow: 'hidden', zIndex: 200 },

@@ -95,7 +95,7 @@ export default function AuthCallbackPage() {
     }}>
       {error ? (
         <>
-          <div style={{ fontSize: '2.5rem' }}>❌</div>
+          <div style={{ fontSize: '2.5rem' }}></div>
           <h2 style={{ color: '#dc2626', fontWeight: 700 }}>Authentication failed</h2>
           <p style={{ color: '#64748b' }}>{error}</p>
           <a href="/login" style={{ color: '#2563eb', fontWeight: 600 }}>Back to Sign In</a>

@@ -1,0 +1,179 @@
+{
+  "name": "ShopZone – Supplier Bulk Import",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "shopzone/bulk-import",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-trigger",
+      "name": "Bulk Import Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 300],
+      "webhookId": "shopzone-bulk-import",
+      "notes": "Called by backend/controllers/supplierController.js requestBulkImport(). Body: { job_id, supplier_id, products: [...] }. Set N8N_BULK_IMPORT_WEBHOOK_URL in backend .env to this webhook's production URL."
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/bulk_import_jobs?id=eq.{{ $json.body.job_id }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "apikey",        "value": "={{ $env.SUPABASE_SERVICE_KEY }}" },
+            { "name": "Authorization", "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}" },
+            { "name": "Content-Type",  "value": "application/json" },
+            { "name": "Prefer",        "value": "return=minimal" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={ \"status\": \"processing\" }"
+      },
+      "id": "mark-processing",
+      "name": "Mark Job Processing",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Validate & normalize each row before sending to Supabase.\n// Required fields: name, price. Optional: description, stock, category_slug, image_url, reorder_threshold.\nconst body = $('Bulk Import Webhook').item.json.body;\nconst rawProducts = body.products || [];\n\nconst valid = [];\nconst rejected = [];\n\nfor (const row of rawProducts) {\n  const name  = (row.name || '').toString().trim();\n  const price = parseFloat(row.price);\n\n  if (!name) { rejected.push({ row, error: 'Missing product name' }); continue; }\n  if (isNaN(price) || price <= 0) { rejected.push({ row, error: 'Invalid or missing price' }); continue; }\n\n  valid.push({\n    name,\n    description:        (row.description || '').toString().trim(),\n    price,\n    stock:               Number.isFinite(parseInt(row.stock)) ? parseInt(row.stock) : 0,\n    category_slug:      (row.category_slug || '').toString().trim() || null,\n    image_url:          (row.image_url || '').toString().trim() || null,\n    reorder_threshold:  Number.isFinite(parseInt(row.reorder_threshold)) ? parseInt(row.reorder_threshold) : 5,\n  });\n}\n\nreturn {\n  job_id:          body.job_id,\n  supplier_id:     body.supplier_id,\n  valid_products:  valid,\n  rejected_rows:   rejected,\n  total_submitted: rawProducts.length,\n};"
+      },
+      "id": "validate-rows",
+      "name": "Validate & Normalize Rows",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": false },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.valid_products.length }}",
+              "rightValue": 0,
+              "operator": { "type": "number", "operation": "gt" }
+            }
+          ]
+        }
+      },
+      "id": "check-any-valid",
+      "name": "Any Valid Rows?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [900, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/rpc/bulk_insert_products",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "apikey",        "value": "={{ $env.SUPABASE_SERVICE_KEY }}" },
+            { "name": "Authorization", "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}" },
+            { "name": "Content-Type",  "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"p_supplier_id\": \"{{ $json.supplier_id }}\",\n  \"p_products\":    {{ JSON.stringify($json.valid_products) }}\n}"
+      },
+      "id": "bulk-insert",
+      "name": "Bulk Insert Products",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [1120, 220],
+      "notes": "Calls bulk_insert_products() RPC — inserts everything inside one server-side loop, returns succeeded/failed/errors."
+    },
+    {
+      "parameters": {
+        "jsCode": "const validation = $('Validate & Normalize Rows').item.json;\nconst rpcResult  = ($json[0] || $json) || {};\n\nconst succeeded = rpcResult.succeeded || 0;\nconst failedFromRpc = rpcResult.failed || 0;\nconst rejectedAtValidation = validation.rejected_rows.length;\n\nconst combinedErrors = [\n  ...validation.rejected_rows.map(r => ({ stage: 'validation', ...r })),\n  ...((rpcResult.errors || []).map(e => ({ stage: 'insert', ...e }))),\n];\n\nreturn {\n  job_id:    validation.job_id,\n  status:    'completed',\n  rows_total:      validation.total_submitted,\n  rows_succeeded:  succeeded,\n  rows_failed:     failedFromRpc + rejectedAtValidation,\n  error_log: combinedErrors,\n};"
+      },
+      "id": "compile-results",
+      "name": "Compile Results",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1340, 220]
+    },
+    {
+      "parameters": {
+        "jsCode": "// No valid rows at all — short-circuit straight to a failed job record.\nconst validation = $('Validate & Normalize Rows').item.json;\nreturn {\n  job_id:    validation.job_id,\n  status:    'failed',\n  rows_total:     validation.total_submitted,\n  rows_succeeded: 0,\n  rows_failed:    validation.rejected_rows.length,\n  error_log: validation.rejected_rows.map(r => ({ stage: 'validation', ...r })),\n};"
+      },
+      "id": "no-valid-rows",
+      "name": "No Valid Rows",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1120, 400]
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/bulk_import_jobs?id=eq.{{ $json.job_id }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "apikey",        "value": "={{ $env.SUPABASE_SERVICE_KEY }}" },
+            { "name": "Authorization", "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}" },
+            { "name": "Content-Type",  "value": "application/json" },
+            { "name": "Prefer",        "value": "return=representation" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"status\":         \"{{ $json.status }}\",\n  \"rows_total\":     {{ $json.rows_total }},\n  \"rows_succeeded\": {{ $json.rows_succeeded }},\n  \"rows_failed\":    {{ $json.rows_failed }},\n  \"error_log\":      {{ JSON.stringify($json.error_log) }},\n  \"completed_at\":   \"{{ $now.toISO() }}\"\n}"
+      },
+      "id": "update-job-row",
+      "name": "Update Job Row",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [1560, 300]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"jobId\": {{ $json.id }},\n  \"status\": \"{{ $json.status }}\",\n  \"succeeded\": {{ $json.rows_succeeded }},\n  \"failed\": {{ $json.rows_failed }}\n}"
+      },
+      "id": "respond",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [1780, 300]
+    }
+  ],
+  "connections": {
+    "Bulk Import Webhook":      { "main": [[{ "node": "Mark Job Processing", "type": "main", "index": 0 }]] },
+    "Mark Job Processing":      { "main": [[{ "node": "Validate & Normalize Rows", "type": "main", "index": 0 }]] },
+    "Validate & Normalize Rows":{ "main": [[{ "node": "Any Valid Rows?", "type": "main", "index": 0 }]] },
+    "Any Valid Rows?": {
+      "main": [
+        [{ "node": "Bulk Insert Products", "type": "main", "index": 0 }],
+        [{ "node": "No Valid Rows",        "type": "main", "index": 0 }]
+      ]
+    },
+    "Bulk Insert Products":     { "main": [[{ "node": "Compile Results", "type": "main", "index": 0 }]] },
+    "Compile Results":          { "main": [[{ "node": "Update Job Row",  "type": "main", "index": 0 }]] },
+    "No Valid Rows":            { "main": [[{ "node": "Update Job Row",  "type": "main", "index": 0 }]] },
+    "Update Job Row":           { "main": [[{ "node": "Respond to Webhook", "type": "main", "index": 0 }]] }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "saveExecutionProgress": true
+  },
+  "tags": ["shopzone", "inventory", "bulk-import"],
+  "_meta": {
+    "instanceId": "shopzone-bulk-import-v1"
+  }
+}

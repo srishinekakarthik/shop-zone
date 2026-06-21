@@ -29,7 +29,7 @@ export default function OrdersPage() {
       <h1 style={styles.title}>My Orders</h1>
       {orders.length === 0 ? (
         <div style={styles.empty}>
-          <p style={{ fontSize: '3rem' }}>📦</p>
+          <p style={{ fontSize: '3rem' }}></p>
           <p>You haven't placed any orders yet.</p>
           <Link to="/products" className="btn btn-primary" style={{ marginTop: '1rem' }}>Start Shopping</Link>
         </div>

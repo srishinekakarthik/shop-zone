@@ -42,7 +42,7 @@ export default function CheckoutPage() {
         {/* Left: Address + Payment */}
         <form onSubmit={handleSubmit} style={{ flex: 2 }}>
           <div className="card" style={styles.section}>
-            <h3 style={styles.sectionTitle}>📦 Shipping Address</h3>
+            <h3 style={styles.sectionTitle}> Shipping Address</h3>
             <div className="form-group">
               <label>Street Address *</label>
               <input className="form-control" name="street" value={address.street} onChange={handleChange} required />
@@ -76,11 +76,11 @@ export default function CheckoutPage() {
           </div>
 
           <div className="card" style={styles.section}>
-            <h3 style={styles.sectionTitle}>💳 Payment Method</h3>
+            <h3 style={styles.sectionTitle}> Payment Method</h3>
             {[
-              { value: 'cod',    label: '💵 Cash on Delivery' },
-              { value: 'card',   label: '💳 Credit / Debit Card (demo)' },
-              { value: 'upi',    label: '📱 UPI (demo)' },
+              { value: 'cod',    label: ' Cash on Delivery' },
+              { value: 'card',   label: ' Credit / Debit Card (demo)' },
+              { value: 'upi',    label: ' UPI (demo)' },
             ].map(opt => (
               <label key={opt.value} style={styles.radioLabel}>
                 <input

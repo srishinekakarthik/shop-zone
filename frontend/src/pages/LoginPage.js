@@ -71,7 +71,11 @@ export default function LoginPage() {
           Continue with Google
         </button>
 
-        <div style={s.divider}><span>or</span></div>
+        <div style={s.divider}>
+          <div style={{ flex: 1, borderTop: '1.5px solid #e2e8f0' }}></div>
+          <span style={{ padding: '0 0.75rem' }}>or</span>
+          <div style={{ flex: 1, borderTop: '1.5px solid #e2e8f0' }}></div>
+        </div>
 
         {/* Tab switch */}
         <div style={s.tabs}>
@@ -195,11 +199,9 @@ const s = {
   divider: {
     display: 'flex',
     alignItems: 'center',
-    gap: 10,
     color: '#94a3b8',
     fontSize: '.85rem',
     marginBottom: '1rem',
-    '::before': { content: '""', flex: 1, height: 1, background: '#e2e8f0' },
   },
   tabs: {
     display: 'flex',

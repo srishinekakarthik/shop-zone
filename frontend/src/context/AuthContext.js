@@ -57,12 +57,12 @@ export function AuthProvider({ children }) {
     return data;
   };
 
-  const signUp = async (email, password, name) => {
+  const signUp = async (email, password, name, extra = {}) => {
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
-        data: { name },   // stored in raw_user_meta_data, trigger copies to profiles
+        data: { name, ...extra },   // stored in raw_user_meta_data, trigger copies to profiles/suppliers
         emailRedirectTo: `${window.location.origin}/auth/callback`,
       },
     });

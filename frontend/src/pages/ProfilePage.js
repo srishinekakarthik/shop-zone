@@ -60,7 +60,7 @@ export default function ProfilePage() {
       <div style={styles.tabs}>
         {['profile', 'password'].map(t => (
           <button key={t} onClick={() => setTab(t)} style={{ ...styles.tab, ...(tab === t ? styles.tabActive : {}) }}>
-            {t === 'profile' ? '👤 Profile Info' : '🔒 Change Password'}
+            {t === 'profile' ? ' Profile Info' : ' Change Password'}
           </button>
         ))}
       </div>

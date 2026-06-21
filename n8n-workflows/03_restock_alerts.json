@@ -1,0 +1,142 @@
+{
+  "name": "ShopZone – Restock Alerts (Per Supplier)",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [{ "field": "minutes", "minutesInterval": 30 }]
+        }
+      },
+      "id": "trigger-schedule",
+      "name": "Every 30 Minutes",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/rpc/get_low_stock_products",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "apikey",        "value": "={{ $env.SUPABASE_SERVICE_KEY }}" },
+            { "name": "Authorization", "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}" },
+            { "name": "Content-Type",  "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={}"
+      },
+      "id": "fetch-low-stock",
+      "name": "Fetch Low Stock Products",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [460, 300],
+      "notes": "Calls the get_low_stock_products() RPC, which already excludes products that have an open restock_alerts row, approved suppliers only."
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": false },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.length }}",
+              "rightValue": 0,
+              "operator": { "type": "number", "operation": "gt" }
+            }
+          ]
+        }
+      },
+      "id": "check-any-low-stock",
+      "name": "Any Low Stock?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "=",
+        "include": "allOtherFields"
+      },
+      "id": "split-products",
+      "name": "Split Into Items",
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [900, 220]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/rpc/create_restock_alert",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "apikey",        "value": "={{ $env.SUPABASE_SERVICE_KEY }}" },
+            { "name": "Authorization", "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}" },
+            { "name": "Content-Type",  "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"p_product_id\":     {{ $json.product_id }},\n  \"p_supplier_id\":    \"{{ $json.supplier_id }}\",\n  \"p_stock_at_alert\": {{ $json.stock }},\n  \"p_threshold\":      {{ $json.reorder_threshold }}\n}"
+      },
+      "id": "create-alert-row",
+      "name": "Create Restock Alert Row",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [1120, 220],
+      "notes": "Writes the open alert to restock_alerts so it won't be re-sent every run (uq_restock_open_per_product)."
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $json.business_email }}",
+        "subject": "= Low Stock Alert — {{ $json.product_name }}",
+        "emailType": "html",
+        "message": "=<div style=\"font-family:Arial,sans-serif;max-width:560px;\">\n<div style=\"background:#d97706;color:white;padding:16px 20px;border-radius:8px 8px 0 0;\">\n  <h2 style=\"margin:0;\"> Low Stock Alert</h2>\n  <p style=\"margin:4px 0 0;opacity:0.9;\">One of your products needs restocking</p>\n</div>\n<div style=\"background:#f8fafc;padding:20px;\">\n  <table style=\"width:100%;border-collapse:collapse;background:white;border-radius:8px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,0.08);\">\n    <tr style=\"background:#f1f5f9;\"><td style=\"padding:10px 14px;font-weight:bold;width:45%;\">Product</td><td style=\"padding:10px 14px;\">{{ $json.product_name }}</td></tr>\n    <tr><td style=\"padding:10px 14px;font-weight:bold;\">Current Stock</td><td style=\"padding:10px 14px;color:#dc2626;font-weight:bold;\">{{ $json.stock }} units</td></tr>\n    <tr style=\"background:#f1f5f9;\"><td style=\"padding:10px 14px;font-weight:bold;\">Your Reorder Threshold</td><td style=\"padding:10px 14px;\">{{ $json.reorder_threshold }} units</td></tr>\n  </table>\n  <p style=\"margin-top:16px;color:#374151;\">Log in to your ShopZone Supplier Dashboard to update stock levels or run a bulk import. This alert will automatically clear once your stock rises back above your threshold.</p>\n  <p style=\"margin-top:16px;color:#6b7280;font-size:13px;\">ShopZone Marketplace · Automated Inventory Monitoring</p>\n</div>\n</div>",
+        "options": {}
+      },
+      "id": "email-supplier",
+      "name": "Email Supplier",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [1340, 220]
+    },
+    {
+      "parameters": {
+        "jsCode": "const allItems = $input.all();\nconst summary = {\n  lowStockProductsFound: allItems.length,\n  timestamp: new Date().toISOString()\n};\nconsole.log('Restock alert run summary:', JSON.stringify(summary));\nreturn summary;"
+      },
+      "id": "log-summary",
+      "name": "Log Run Summary",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [900, 400]
+    }
+  ],
+  "connections": {
+    "Every 30 Minutes":        { "main": [[{ "node": "Fetch Low Stock Products", "type": "main", "index": 0 }]] },
+    "Fetch Low Stock Products":{ "main": [[{ "node": "Any Low Stock?",          "type": "main", "index": 0 }]] },
+    "Any Low Stock?": {
+      "main": [
+        [{ "node": "Split Into Items", "type": "main", "index": 0 }],
+        [{ "node": "Log Run Summary",  "type": "main", "index": 0 }]
+      ]
+    },
+    "Split Into Items":        { "main": [[{ "node": "Create Restock Alert Row", "type": "main", "index": 0 }]] },
+    "Create Restock Alert Row":{ "main": [[{ "node": "Email Supplier",          "type": "main", "index": 0 }]] }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "saveExecutionProgress": true
+  },
+  "tags": ["shopzone", "inventory", "restock", "gemini"],
+  "_meta": {
+    "instanceId": "shopzone-restock-v1"
+  }
+}

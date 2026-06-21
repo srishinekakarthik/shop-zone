@@ -9,4 +9,10 @@ router.get('/orders',                 ctrl.getAllOrders);
 router.patch('/orders/:id/status',    ctrl.updateOrderStatus);
 router.get('/users',                  ctrl.getAllUsers);
 
+router.get('/suppliers',                ctrl.getSuppliers);
+router.patch('/suppliers/:id/approve',  ctrl.approveSupplier);
+router.patch('/suppliers/:id/reject',   ctrl.rejectSupplier);
+
+router.get('/intelligence',           ctrl.getIntelligence);
+
 module.exports = router;
