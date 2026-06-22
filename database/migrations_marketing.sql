@@ -83,8 +83,8 @@ BEGIN
   RETURN QUERY
   SELECT DISTINCT ON (u.id)
     u.id,
-    u.email,
-    COALESCE(pr.name, split_part(u.email, '@', 1))
+    u.email::TEXT,
+    COALESCE(pr.name, split_part(u.email, '@', 1))::TEXT
   FROM orders o
   JOIN order_items oi ON oi.order_id = o.id
   JOIN products    p  ON p.id = oi.product_id
@@ -95,6 +95,13 @@ BEGIN
     AND NOT EXISTS (
       SELECT 1 FROM product_announcement_emails pae
       WHERE pae.product_id = p_product_id AND pae.user_id = o.user_id
+    )
+    AND NOT EXISTS (
+      SELECT 1 FROM orders o2
+      JOIN order_items oi2 ON oi2.order_id = o2.id
+      WHERE o2.user_id = u.id
+        AND oi2.product_id = p_product_id
+        AND o2.status != 'cancelled'
     )
   ORDER BY u.id;
 END;
@@ -165,8 +172,8 @@ BEGIN
   RETURN QUERY
   SELECT DISTINCT ON (u.id)
     u.id,
-    u.email,
-    COALESCE(pr.name, split_part(u.email, '@', 1))
+    u.email::TEXT,
+    COALESCE(pr.name, split_part(u.email, '@', 1))::TEXT
   FROM orders o
   JOIN order_items oi ON oi.order_id = o.id
   JOIN products    p  ON p.id = oi.product_id
@@ -178,6 +185,13 @@ BEGIN
     AND NOT EXISTS (
       SELECT 1 FROM product_announcement_emails pae
       WHERE pae.product_id = p_product_id AND pae.user_id = o.user_id
+    )
+    AND NOT EXISTS (
+      SELECT 1 FROM orders o2
+      JOIN order_items oi2 ON oi2.order_id = o2.id
+      WHERE o2.user_id = u.id
+        AND oi2.product_id = p_product_id
+        AND o2.status != 'cancelled'
     )
   ORDER BY u.id;
 END;
